@@ -1,18 +1,22 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+from config import Config
+from extensions import db, jwt
+from auth_routes import auth_bp
 
 app = Flask(__name__)
+app.config.from_object(Config)
 cors = CORS(app, origins='*')
 
-@app.route('/api/users', methods=['GET'])
-def get_users():
-    return jsonify([
-        {"id": 1, "name": "Alice"},
-        {"id": 2, "name": "Bob"}
-    ])
+db.init_app(app)
+jwt.init_app(app)
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+app.register_blueprint(auth_bp)
+
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
 
 #python server/env/main.py for Windows
 #python3 server/env/main.py for Mac/Linux
