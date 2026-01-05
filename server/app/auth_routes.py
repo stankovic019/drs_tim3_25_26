@@ -20,7 +20,7 @@ def register():
         first_name=data["firstName"],
         last_name=data["lastName"],
         email=data["email"],
-        password_hash=generate_password_hash(data["password"])
+        password_hash=generate_password_hash(data["password"], method="pbkdf2:sha256:600000")
     )
 
     db.session.add(user)
@@ -34,42 +34,40 @@ def register():
 
 
 # ---------------- LOGIN ----------------
+LOCK_MINUTES = 1  
+
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    data = request.json
-    user = User.query.filter_by(email=data["email"]).first()
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
 
+    if not email or not password:
+        return jsonify({"message": "Email and password are required"}), 400
+
+    user = User.query.filter_by(email=email).first()
     if not user:
         return jsonify({"message": "Invalid credentials"}), 401
 
-    attempt = LoginAttempt.query.filter_by(user_id=user.id).first()
+    now = datetime.utcnow()
 
-    if attempt.blocked_until and attempt.blocked_until > datetime.utcnow():
-        return jsonify({
-            "message": "Account temporarily blocked",
-            "blocked_until": attempt.blocked_until.isoformat()
-        }), 403
+    if user.locked_until and user.locked_until > now:
+        return jsonify({"message": "Account is locked. Try again later."}), 423
 
-    if not check_password_hash(user.password_hash, data["password"]):
-        attempt.failed_attempts += 1
+    if not check_password_hash(user.password_hash, password):
+        user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
 
-        if attempt.failed_attempts >= 3:
-            attempt.blocked_until = datetime.utcnow() + timedelta(minutes=1)
+        if user.failed_login_attempts >= 3:
+            user.locked_until = now + timedelta(minutes=LOCK_MINUTES)
+            user.failed_login_attempts = 0
 
         db.session.commit()
         return jsonify({"message": "Invalid credentials"}), 401
 
-    # SUCCESS LOGIN
-    attempt.failed_attempts = 0
-    attempt.blocked_until = None
+    # Successful login
+    user.failed_login_attempts = 0
+    user.locked_until = None
     db.session.commit()
 
-    token = create_access_token(
-        identity=user.id,
-        additional_claims={"role": user.role}
-    )
-
-    return jsonify({
-        "access_token": token,
-        "role": user.role
-    }), 200
+    token = create_access_token(identity=user.id, additional_claims={"role": user.role})
+    return jsonify({"access_token": token, "role": user.role}), 200
