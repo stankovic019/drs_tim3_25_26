@@ -40,6 +40,10 @@ def create_quiz():
     db.session.flush()  
 
     for q in questions_data:
+        if not isinstance(q, dict):
+            db.session.rollback()
+            return jsonify({"message": "Each question must be an object"}), 400
+        
         q_text = (q.get("text") or "").strip()
         points = q.get("points", 1)
         answers_data = q.get("answers") or []
@@ -60,11 +64,19 @@ def create_quiz():
         db.session.flush()
 
         for a in answers_data:
+            if not isinstance(a, dict):
+                db.session.rollback()
+                return jsonify({"message": "Each answer must be an object"}), 400
+
             a_text = (a.get("text") or "").strip()
-            is_correct = bool(a.get("isCorrect"))
             if not a_text:
                 db.session.rollback()
                 return jsonify({"message": "Each answer must have text"}), 400
+
+            is_correct = a.get("isCorrect")
+            if not isinstance(is_correct, bool):
+                db.session.rollback()
+                return jsonify({"message": "isCorrect must be boolean (true/false)"}), 400
             if is_correct:
                 correct_count += 1
 
@@ -470,6 +482,10 @@ def update_rejected_quiz(quiz_id):
     db.session.flush()
 
     for q in questions_data:
+        if not isinstance(q, dict):
+            db.session.rollback()
+            return jsonify({"message": "Each question must be an object"}), 400
+
         q_text = (q.get("text") or "").strip()
         points = q.get("points", 1)
         answers_data = q.get("answers") or []
@@ -490,12 +506,20 @@ def update_rejected_quiz(quiz_id):
 
         correct_count = 0
         for a in answers_data:
-            a_text = (a.get("text") or "").strip()
-            is_correct = bool(a.get("isCorrect"))
+            if not isinstance(a, dict):
+                db.session.rollback()
+                return jsonify({"message": "Each answer must be an object"}), 400
 
+            a_text = (a.get("text") or "").strip()
             if not a_text:
                 db.session.rollback()
                 return jsonify({"message": "Each answer must have text"}), 400
+
+            is_correct = a.get("isCorrect")
+
+            if not isinstance(is_correct, bool):
+                db.session.rollback()
+                return jsonify({"message": "isCorrect must be boolean (true/false)"}), 400
 
             if is_correct:
                 correct_count += 1
