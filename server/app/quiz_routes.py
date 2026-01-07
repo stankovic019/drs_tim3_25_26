@@ -13,7 +13,7 @@ def require_role(*allowed_roles):
     role = (get_jwt() or {}).get("role")
     return role in allowed_roles
 
-
+# ---------------- NAPRAVI KVIZ ----------------
 @quiz_bp.route("", methods=["POST"])
 @jwt_required()
 def create_quiz():
@@ -81,6 +81,7 @@ def create_quiz():
     db.session.commit()
     return jsonify({"message": "Quiz created", "id": quiz.id, "status": quiz.status}), 201
 
+# ---------------- KVIZ ZA ODOBRAVANJE LISTA ----------------
 @quiz_bp.route("/pending", methods=["GET"])
 @jwt_required()
 def list_pending_quizzes():
@@ -101,6 +102,7 @@ def list_pending_quizzes():
         for q in quizzes
     ]), 200
 
+# ---------------- ODOBRI KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>/approve", methods=["PATCH"])
 @jwt_required()
 def approve_quiz(quiz_id):
@@ -120,7 +122,7 @@ def approve_quiz(quiz_id):
 
     return jsonify({"message": "Quiz approved", "id": quiz.id, "status": quiz.status}), 200
 
-
+# ---------------- ODBIJ KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>/reject", methods=["PATCH"])
 @jwt_required()
 def reject_quiz(quiz_id):
@@ -150,7 +152,7 @@ def reject_quiz(quiz_id):
         "reason": quiz.rejection_reason
     }), 200
 
-
+# ---------------- LISTA ODOBRENIH KVIZOVA ----------------
 @quiz_bp.route("", methods=["GET"])
 @jwt_required()
 def list_approved_quizzes():
@@ -165,7 +167,7 @@ def list_approved_quizzes():
         for q in quizzes
     ]), 200
 
-
+# ---------------- DETALJI KVIZA ----------------
 @quiz_bp.route("/<int:quiz_id>", methods=["GET"])
 @jwt_required()
 def get_quiz_details(quiz_id):
@@ -199,7 +201,7 @@ def get_quiz_details(quiz_id):
         ]
     }), 200
 
-
+# ---------------- POKRENI KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>/start", methods=["POST"])
 @jwt_required()
 def start_quiz_attempt(quiz_id):
@@ -241,6 +243,7 @@ def start_quiz_attempt(quiz_id):
         "finishedAt": None
     }), 201
 
+# ---------------- POSALJI POKUSAJ KVIZA ----------------
 @quiz_bp.route("/<int:quiz_id>/submit", methods=["POST"])
 @jwt_required()
 def submit_quiz_attempt(quiz_id):
@@ -324,6 +327,7 @@ def submit_quiz_attempt(quiz_id):
         "finishedAt": attempt.finished_at.isoformat()
     }), 200
 
+# ---------------- LISTA POBJEDNIKA ----------------
 @quiz_bp.route("/<int:quiz_id>/leaderboard", methods=["GET"])
 @jwt_required()
 def leaderboard(quiz_id):
@@ -357,6 +361,7 @@ def leaderboard(quiz_id):
         })
     return jsonify(result), 200
 
+# ---------------- REZULTAT KVIZA ----------------
 @quiz_bp.route("/<int:quiz_id>/result/me", methods=["GET"])
 @jwt_required()
 def my_result(quiz_id):
@@ -399,6 +404,7 @@ def my_result(quiz_id):
         "finishedAt": attempt.finished_at.isoformat() if attempt.finished_at else None
     }), 200
 
+# ---------------- MOJI KVIZOVI ----------------
 @quiz_bp.route("/mine", methods=["GET"])
 @jwt_required()
 def my_quizzes():
@@ -426,6 +432,7 @@ def my_quizzes():
         for q in quizzes
     ]), 200
 
+# ---------------- ODBIJENI KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>", methods=["PUT"])
 @jwt_required()
 def update_rejected_quiz(quiz_id):

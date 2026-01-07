@@ -9,6 +9,12 @@ class User(db.Model):
     last_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.Text, nullable=False)
+    birth_date = db.Column(db.Date, nullable=True)
+    gender = db.Column(db.String(10), nullable=True)
+    country = db.Column(db.String(100), nullable=True)
+    street = db.Column(db.String(150), nullable=True)
+    street_number = db.Column(db.String(20), nullable=True)
+    profile_image = db.Column(db.Text, nullable=True)
     role = db.Column(db.String(20), default="PLAYER")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     failed_login_attempts = db.Column(db.Integer, nullable=False, default=0)
@@ -89,4 +95,9 @@ class QuizAttempt(db.Model):
         db.UniqueConstraint("quiz_id", "player_id", name="uq_attempt_quiz_player"),
     )
 
+class TokenBlocklist(db.Model):
+    __tablename__ = "token_blocklist"
 
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), nullable=False, unique=True, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

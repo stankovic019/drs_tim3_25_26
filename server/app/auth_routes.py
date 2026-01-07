@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from extensions import db
-from models import User
+from models import User, TokenBlocklist
 
 def require_role(*allowed_roles):
     claims = get_jwt()
@@ -21,14 +21,44 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 def register():
     data = request.get_json() or {}
 
-    if User.query.filter_by(email=data["email"]).first():
+    first_name = (data.get("firstName") or "").strip()
+    last_name = (data.get("lastName") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    birth_date_str = (data.get("birthDate") or data.get("birth_date") or "").strip()
+    gender = (data.get("gender") or "").strip()
+    country = (data.get("country") or "").strip()
+    street = (data.get("street") or "").strip()
+    street_number = (data.get("streetNumber") or data.get("street_number") or "").strip()
+
+    if not first_name or not last_name or not email or not password:
+        return jsonify({"message": "firstName, lastName, email and password are required"}), 400
+
+    if not birth_date_str or not gender or not country or not street or not street_number:
+        return jsonify({"message": "birthDate, gender, country, street and streetNumber are required"}), 400
+
+    try:
+        birth_date = datetime.strptime(birth_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"message": "birthDate must be in format YYYY-MM-DD"}), 400
+
+    if User.query.filter_by(email=email).first():
         return jsonify({"message": "Email already exists"}), 400
 
     user = User(
-        first_name=data["firstName"],
-        last_name=data["lastName"],
-        email=data["email"],
-        password_hash=generate_password_hash(data["password"], method="pbkdf2:sha256:600000")
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        password_hash=generate_password_hash(password, method="pbkdf2:sha256:600000"),
+        birth_date=birth_date,
+        gender=gender,
+        country=country,
+        street=street,
+        street_number=street_number,
+        profile_image=None,  
+        failed_login_attempts=0,
+        locked_until=None,
     )
 
     db.session.add(user)
@@ -38,7 +68,7 @@ def register():
 
 
 # ---------------- LOGIN ----------------
-LOCK_MINUTES = 1  
+LOCK_MINUTES = 15 
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -77,6 +107,16 @@ def login():
     return jsonify({"access_token": token, "role": user.role}), 200
 
 
+# ---------------- LOGOUT ----------------
+@auth_bp.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    jti = get_jwt()["jti"]
+    db.session.add(TokenBlocklist(jti=jti))
+    db.session.commit()
+    return jsonify({"message": "Logged out"}), 200
+
+# ---------------- KORISNIK ----------------
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required()
 def me():
@@ -93,6 +133,7 @@ def me():
         "role": user.role
     }), 200
 
+# ---------------- ADMIN USERS ----------------
 @auth_bp.route("/users", methods=["GET"])
 @jwt_required()
 def list_users():
@@ -113,6 +154,7 @@ def list_users():
         for u in users
     ]), 200
 
+# ---------------- ADMIN POSTAVI USER ROLE ----------------
 @auth_bp.route("/users/<int:user_id>/role", methods=["PATCH"])
 @jwt_required()
 def set_user_role(user_id):

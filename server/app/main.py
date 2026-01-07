@@ -4,6 +4,7 @@ from config import Config
 from extensions import db, jwt
 from auth_routes import auth_bp
 from quiz_routes import quiz_bp
+import jwt_list 
 
 app = Flask(__name__)
 app.config.from_object(Config)
