@@ -23,3 +23,70 @@ class LoginAttempt(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True)
     failed_attempts = db.Column(db.Integer, default=0)
     blocked_until = db.Column(db.DateTime)
+
+
+class Quiz(db.Model):
+    __tablename__ = "quizzes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    duration_seconds = db.Column(db.Integer, nullable=False)
+
+    status = db.Column(db.String(20), nullable=False, default="PENDING")
+    rejection_reason = db.Column(db.Text, nullable=True)
+
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    questions = db.relationship(
+        "Question",
+        backref="quiz",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+
+class Question(db.Model):
+    __tablename__ = "questions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"), nullable=False)
+
+    text = db.Column(db.Text, nullable=False)
+    points = db.Column(db.Integer, nullable=False, default=1)
+
+    answers = db.relationship(
+        "AnswerOption",
+        backref="question",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+
+class AnswerOption(db.Model):
+    __tablename__ = "answer_options"
+
+    id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, db.ForeignKey("questions.id"), nullable=False)
+
+    text = db.Column(db.Text, nullable=False)
+    is_correct = db.Column(db.Boolean, nullable=False, default=False)
+
+class QuizAttempt(db.Model):
+    __tablename__ = "quiz_attempts"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    started_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    finished_at = db.Column(db.DateTime, nullable=True)
+
+    score = db.Column(db.Integer, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint("quiz_id", "player_id", name="uq_attempt_quiz_player"),
+    )
+
+

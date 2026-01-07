@@ -7,6 +7,13 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from extensions import db
 from models import User
 
+def require_role(*allowed_roles):
+    claims = get_jwt()
+    role = claims.get("role")
+    if role not in allowed_roles:
+        return False
+    return True
+
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 # ---------------- REGISTER ----------------
