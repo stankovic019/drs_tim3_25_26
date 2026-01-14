@@ -176,3 +176,39 @@ def set_user_role(user_id):
     db.session.commit()
 
     return jsonify({"message": "Role updated", "id": user.id, "role": user.role}), 200
+
+
+# ---------------- ADMIN: sve informacije o korisnicima ----------------
+@auth_bp.route("/admin/all_users", methods=["GET"])
+@jwt_required()
+def admin_get_all_users():
+    # Provera da li je trenutni korisnik ADMIN
+    claims = get_jwt()
+    if claims.get("role") != "ADMIN":
+        return jsonify({"message": "Forbidden"}), 403
+
+    # Dohvati sve korisnike iz baze
+    users = User.query.order_by(User.id.asc()).all()
+
+    # Pretvori u JSON niz
+    users_list = [
+        {
+            "id": u.id,
+            "firstName": u.first_name,
+            "lastName": u.last_name,
+            "email": u.email,
+            "role": u.role,
+            "birthDate": u.birth_date.isoformat() if u.birth_date else None,
+            "gender": u.gender,
+            "country": u.country,
+            "street": u.street,
+            "streetNumber": u.street_number,
+            "profileImage": u.profile_image,
+            "createdAt": u.created_at.isoformat() if u.created_at else None,
+            "failedLoginAttempts": u.failed_login_attempts,
+            "lockedUntil": u.locked_until.isoformat() if u.locked_until else None
+        }
+        for u in users
+    ]
+
+    return jsonify(users_list), 200

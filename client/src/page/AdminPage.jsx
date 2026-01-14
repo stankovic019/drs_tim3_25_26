@@ -1,5 +1,6 @@
 import React from "react";
 import LogoutButton from "../components/LogoutButton";
+import Dashboard from "../components/Dashboard";
 
 const AdminPage = () => {
   return (
@@ -10,7 +11,8 @@ const AdminPage = () => {
           <LogoutButton />
         </div>
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <p className="text-gray-600">Welcome to the Admin Page</p>
+          <Dashboard />
+
         </div>
       </div>
     </div>

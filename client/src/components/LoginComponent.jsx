@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const res = await loginUser({ email, password });
       login(res.access_token, res.refresh_token);
-      navigate("/dashboard");
+      navigate("/adminpage");
     } catch (err) {
       setError("Invalid email or password");
     }
