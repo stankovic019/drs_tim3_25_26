@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
-from extensions import db
-from models import Quiz, Question, AnswerOption, QuizAttempt, User
+from app.extensions import db
+from app.models import Quiz, Question, AnswerOption, QuizAttempt, User
 
 from datetime import datetime
 

@@ -1,5 +1,5 @@
-from extensions import jwt, db
-from models import TokenBlocklist
+from app.extensions import jwt, db
+from app.models import TokenBlocklist
 
 @jwt.token_in_blocklist_loader
 def is_token_revoked(jwt_header, jwt_payload):

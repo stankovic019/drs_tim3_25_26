@@ -10,11 +10,11 @@ export default function Register() {
     lastName: "",
     email: "",
     password: "",
-    dateOfBirth: "",
+    birthDate: "",       // promenjeno sa dateOfBirth
     gender: "",
     country: "",
     street: "",
-    number: "",
+    streetNumber: "",    // promenjeno sa number
   });
 
   const [error, setError] = useState("");
@@ -97,9 +97,9 @@ export default function Register() {
             <div>
               <StyledInput
                 type="date"
-                name="dateOfBirth"
+                name="birthDate"
                 placeholder="Date of Birth"
-                value={form.dateOfBirth}
+                value={form.birthDate}
                 onChange={handleChange}
                 required
               />
@@ -142,9 +142,9 @@ export default function Register() {
 
             <div className="col-span-2">
               <StyledInput
-                name="number"
+                name="streetNumber"
                 placeholder="Number"
-                value={form.number}
+                value={form.streetNumber}
                 onChange={handleChange}
                 required
               />

@@ -4,8 +4,8 @@ from flask_jwt_extended import create_access_token
 from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
-from extensions import db
-from models import User, TokenBlocklist
+from app.extensions import db
+from app.models import User, TokenBlocklist
 
 def require_role(*allowed_roles):
     claims = get_jwt()
