@@ -12,7 +12,7 @@ export async function loginUser(data) {
 
   localStorage.setItem("access", response.data.access_token);
   localStorage.setItem("refresh", response.data.refresh_token);
-
+  localStorage.setItem("userId", response.data.id);
   return response.data;
 }
 

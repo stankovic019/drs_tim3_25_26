@@ -4,6 +4,7 @@ from app.config import Config
 from app.extensions import db, jwt
 from app.auth_routes import auth_bp
 from app.quiz_routes import quiz_bp
+from app.user_routes import user_bp
 import app.jwt_list  # ako je u app folderu, može: from app import jwt_list
 
 app = Flask(__name__)
@@ -15,6 +16,7 @@ jwt.init_app(app)  # povezuje JWT sa Flask app
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(quiz_bp)
+app.register_blueprint(user_bp)
 
 if __name__ == "__main__":
     with app.app_context():

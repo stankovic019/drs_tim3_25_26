@@ -104,7 +104,7 @@ def login():
     db.session.commit()
 
     token = create_access_token(identity=str(user.id), additional_claims={"role": user.role})
-    return jsonify({"access_token": token, "role": user.role}), 200
+    return jsonify({"access_token": token, "role": user.role, "id": user.id}), 200
 
 
 # ---------------- LOGOUT ----------------
