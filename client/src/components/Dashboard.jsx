@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAllUsers, updateUserRole } from "../api/dashboardApi";
+import { fetchAllUsers, updateUserRole, deleteUser } from "../api/dashboardApi";
 
 export default function Dashboard() {
     const [users, setUsers] = useState([]);
@@ -34,6 +34,22 @@ export default function Dashboard() {
         }
     };
 
+    const handleDeleteUser = async (userId) => {
+        const confirmed = window.confirm("Are you sure you want to delete this user?");
+        if (!confirmed) return;
+
+        try {
+            await deleteUser(userId);
+
+            // ukloni korisnika iz tabele odmah
+            setUsers((prev) => prev.filter((u) => u.id !== userId));
+        } catch (err) {
+            console.error("Failed to delete user", err);
+            setError("Failed to delete user");
+        }
+    };
+
+
     if (error) {
         return <div>{error}</div>;
     }
@@ -52,6 +68,8 @@ export default function Dashboard() {
                         <th>Role</th>
                         <th>Country</th>
                         <th>Created At</th>
+                        <th>Delete</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -81,6 +99,20 @@ export default function Dashboard() {
                                 </td>
                                 <td>{user.country}</td>
                                 <td>{user.createdAt}</td>
+                                <td>
+                                    <button
+                                        onClick={() => handleDeleteUser(user.id)}
+                                        style={{
+                                            background: "red",
+                                            color: "white",
+                                            border: "none",
+                                            padding: "4px 8px",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                </td>
                             </tr>
                         ))
                     )}

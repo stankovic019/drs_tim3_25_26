@@ -212,3 +212,31 @@ def admin_get_all_users():
     ]
 
     return jsonify(users_list), 200
+
+
+# ---------------- ADMIN: OBRISI KORISNIKA ----------------
+@auth_bp.route("/users/<int:user_id>", methods=["DELETE"])
+@jwt_required()
+def delete_user(user_id):
+    claims = get_jwt()
+
+    # Samo ADMIN može da briše korisnike
+    if claims.get("role") != "ADMIN":
+        return jsonify({"message": "Forbidden"}), 403
+
+    # Opcionalno: zabrani da admin obriše samog sebe
+    current_user_id = int(get_jwt_identity())
+    if current_user_id == user_id:
+        return jsonify({"message": "You cannot delete your own account"}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({
+        "message": "User deleted successfully",
+        "id": user_id
+    }), 200

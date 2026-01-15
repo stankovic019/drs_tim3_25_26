@@ -22,3 +22,17 @@ export async function updateUserRole(userId, newRole) {
     });
     return response.data;
 }
+
+// ---------------- DELETE USER (ADMIN) ----------------
+export async function deleteUser(userId) {
+    // Uzmi token iz localStorage
+    const token = localStorage.getItem("access");
+
+    const response = await axiosInstance.delete(`/auth/users/${userId}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    return response.data;
+}
