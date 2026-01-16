@@ -68,7 +68,7 @@ def register():
 
 
 # ---------------- LOGIN ----------------
-LOCK_MINUTES = 15 
+LOCK_MINUTES = 1
 
 @auth_bp.route("/login", methods=["POST"])
 def login():

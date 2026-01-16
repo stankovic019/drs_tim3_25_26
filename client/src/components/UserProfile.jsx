@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchMyProfile, updateMyProfile } from "../api/userProfileApi.js";
+import { fetchMyProfile, updateMyProfile, uploadProfileImage } from "../api/userProfileApi.js";
 import SaveButton from "./SaveButton";
 
 export default function UserProfile() {
@@ -44,6 +44,37 @@ export default function UserProfile() {
     const { name, value } = e.target;
     setUser((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleUpload = async (file) => {
+    if (!file) return;
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUser((prev) => ({
+          ...prev,
+          profileImage: event.target.result,
+        }));
+      };
+      reader.readAsDataURL(file);
+
+      const response = await uploadProfileImage(file);
+
+      setUser((prev) => ({
+        ...prev,
+        profileImage: response.filename,
+      }));
+      setIsModalOpen(false);
+
+    } catch (error) {
+      console.error(error);
+      alert(
+        error.response?.data?.message || "Image upload failed"
+      );
+    }
+  };
+
+
 
   const handleSave = async () => {
     try {
@@ -163,9 +194,9 @@ export default function UserProfile() {
               className="w-full h-[40px] border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 focus:border-[#efad21] focus:shadow-[4px_4px_#efad21] cursor-pointer"
             >
               <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
             </select>
           </div>
 
@@ -231,21 +262,8 @@ export default function UserProfile() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        setUser((prev) => ({
-                          ...prev,
-                          profileImage: event.target.result,
-                        }));
-                        setIsModalOpen(false);
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
                   className="hidden"
+                  onChange={(e) => handleUpload(e.target.files[0])}
                 />
               </label>
             </div>

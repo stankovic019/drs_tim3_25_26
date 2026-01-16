@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuthHook";
 import logo from "/logo-large.png";
 import StyledInput from "./StyledInput";
 
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +20,9 @@ export default function Login() {
     try {
       const res = await loginUser({ email, password });
       login(res.access_token, res.refresh_token);
-      navigate("/adminpage");
+      if (res.role === "PLAYER") navigate("/playerpage");
+      else if (res.role === "MODERATOR") navigate("/moderatorpage");
+      else if (res.role === "ADMIN") navigate("/adminpage");
     } catch (err) {
       setError("Invalid email or password");
     }
