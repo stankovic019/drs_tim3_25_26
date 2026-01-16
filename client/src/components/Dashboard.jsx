@@ -22,6 +22,7 @@ export default function Dashboard() {
       try {
         const data = await fetchAllUsers();
         setUsers(data);
+        console.log(data);
       } catch (err) {
         setError("Failed to load users");
       }
@@ -91,7 +92,7 @@ export default function Dashboard() {
             <thead>
               <tr className="bg-[#fff]">
                 <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
-                  ID
+
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   First Name
@@ -135,8 +136,8 @@ export default function Dashboard() {
                     key={user.id}
                     className="bg-[#fff] transition-all duration-200 hover:bg-[#f5f5f5]"
                   >
-                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
-                      {user.id}
+                    <td className="px-4  py-2 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      <img src={user.profileImage} alt="NoImage" className="max-w-[100px] aspect-square rounded-md" />
                     </td>
                     <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
                       {user.firstName}
