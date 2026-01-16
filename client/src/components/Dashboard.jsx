@@ -2,122 +2,167 @@ import { useEffect, useState } from "react";
 import { fetchAllUsers, updateUserRole, deleteUser } from "../api/dashboardApi";
 
 export default function Dashboard() {
-    const [users, setUsers] = useState([]);
-    const [error, setError] = useState("");
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState("");
 
-    useEffect(() => {
-        const loadUsers = async () => {
-            try {
-                const data = await fetchAllUsers();
-                setUsers(data);
-            } catch (err) {
-                setError("Failed to load users");
-            }
-        };
-
-        loadUsers();
-    }, []);
-
-    const handleRoleChange = async (userId, newRole) => {
-        try {
-            await updateUserRole(userId, newRole);
-
-            // update lokalnog state-a da se odmah vidi promena
-            setUsers((prev) =>
-                prev.map((user) =>
-                    user.id === userId ? { ...user, role: newRole } : user
-                )
-            );
-        } catch (err) {
-            console.error("Failed to update role", err);
-            setError("Failed to update role");
-        }
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const data = await fetchAllUsers();
+        setUsers(data);
+      } catch (err) {
+        setError("Failed to load users");
+      }
     };
 
-    const handleDeleteUser = async (userId) => {
-        const confirmed = window.confirm("Are you sure you want to delete this user?");
-        if (!confirmed) return;
+    loadUsers();
+  }, []);
 
-        try {
-            await deleteUser(userId);
-
-            // ukloni korisnika iz tabele odmah
-            setUsers((prev) => prev.filter((u) => u.id !== userId));
-        } catch (err) {
-            console.error("Failed to delete user", err);
-            setError("Failed to delete user");
-        }
-    };
-
-
-    if (error) {
-        return <div>{error}</div>;
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await updateUserRole(userId, newRole);
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId ? { ...user, role: newRole } : user
+        )
+      );
+    } catch (err) {
+      setError("Failed to update role");
     }
+  };
 
-    return (
-        <div>
-            <h2>All Users</h2>
-            <table border="1">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Birthday</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Country</th>
-                        <th>Created At</th>
-                        <th>Delete</th>
-
-                    </tr>
-                </thead>
-                <tbody>
-                    {users.length === 0 ? (
-                        <tr>
-                            <td colSpan="8">No users found</td>
-                        </tr>
-                    ) : (
-                        users.map((user) => (
-                            <tr key={user.id}>
-                                <td>{user.id}</td>
-                                <td>{user.firstName}</td>
-                                <td>{user.lastName}</td>
-                                <td>{user.birthDate}</td>
-                                <td>{user.email}</td>
-                                <td>
-                                    <select
-                                        value={user.role}
-                                        onChange={(e) =>
-                                            handleRoleChange(user.id, e.target.value)
-                                        }
-                                    >
-                                        <option value="PLAYER">PLAYER</option>
-                                        <option value="MODERATOR">MODERATOR</option>
-                                        <option value="ADMIN">ADMIN</option>
-                                    </select>
-                                </td>
-                                <td>{user.country}</td>
-                                <td>{user.createdAt}</td>
-                                <td>
-                                    <button
-                                        onClick={() => handleDeleteUser(user.id)}
-                                        style={{
-                                            background: "red",
-                                            color: "white",
-                                            border: "none",
-                                            padding: "4px 8px",
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
-        </div>
+  const handleDeleteUser = async (userId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this user?"
     );
+    if (!confirmed) return;
+
+    try {
+      await deleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      setError("Failed to delete user");
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto mt-6">
+        <div className="border-2 border-[#353a7c] rounded-xl bg-white shadow-[5px_5px_#353a7c] p-6 flex items-start gap-3">
+          <div>
+            <p className="text-lg font-bold text-[#353a7c]">
+              Failed to load users
+            </p>
+            <p className="text-sm text-[#666]">
+              Please refresh the page or try again later.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="border-3 bg-[#2872CB] border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-5">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse ">
+            <thead>
+              <tr className="bg-[#fff]">
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  ID
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  First Name
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  Last Name
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  Birthday
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  Email
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  Role
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  Country
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  Created At
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                  Delete
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="9"
+                    className="px-6 py-8 text-center text-[#666] font-semibold border-2 border-[#353a7c] bg-[#fff]"
+                  >
+                    No users found
+                  </td>
+                </tr>
+              ) : (
+                users.map((user, index) => (
+                  <tr
+                    key={user.id}
+                    className="bg-[#fff] transition-all duration-200 hover:bg-[#f5f5f5]"
+                  >
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      {user.id}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      {user.firstName}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      {user.lastName}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      {user.birthDate}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      {user.email}
+                    </td>
+                    <td className="px-4 py-3 border-2 border-[#353a7c]">
+                      <select
+                        value={user.role}
+                        onChange={(e) =>
+                          handleRoleChange(user.id, e.target.value)
+                        }
+                        className="w-full h-[40px] border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 cursor-pointer focus:border-[#efad21] focus:shadow-[4px_4px_#efad21]"
+                      >
+                        <option value="PLAYER">PLAYER</option>
+                        <option value="MODERATOR">MODERATOR</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      {user.country}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                      {user.createdAt}
+                    </td>
+                    <td className="px-4 py-3 border-2 border-[#353a7c]">
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="relative overflow-hidden w-full h-[40px] border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] cursor-pointer transition-all duration-300 hover:text-[#e8e8e8] hover:shadow-[6px_6px_#9b0101] hover:border-[#fff] z-[1] before:content-[''] before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:bg-[#c80404] before:z-[-1] before:transition-all before:duration-300 hover:before:w-full"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }

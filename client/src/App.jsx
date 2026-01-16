@@ -10,13 +10,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LoginPage />} /> /* Default route */
+        {/*<Route path="/" element={<LoginPage />} /> /* Default route */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/adminpage" element={<AdminPage />} />
         <Route path="/playerpage" element={<PlayerPage />} />
         <Route path="/moderatorpage" element={<ModeratorPage />} />
-        <Route path="/user-profile" element={<UserProfilePage />} />
+        <Route path="/" element={<UserProfilePage />} />
       </Routes>
     </BrowserRouter>
   );
