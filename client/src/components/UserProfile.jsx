@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { fetchMyProfile, updateMyProfile, uploadProfileImage } from "../api/userProfileApi.js";
+import {
+  fetchMyProfile,
+  updateMyProfile,
+  uploadProfileImage,
+} from "../api/userProfileApi.js";
 import SaveButton from "./SaveButton";
 
 export default function UserProfile() {
@@ -65,16 +69,11 @@ export default function UserProfile() {
         profileImage: response.filename,
       }));
       setIsModalOpen(false);
-
     } catch (error) {
       console.error(error);
-      alert(
-        error.response?.data?.message || "Image upload failed"
-      );
+      alert(error.response?.data?.message || "Image upload failed");
     }
   };
-
-
 
   const handleSave = async () => {
     try {
@@ -263,7 +262,10 @@ export default function UserProfile() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => handleUpload(e.target.files[0])}
+                  onChange={(e) => {
+                    handleUpload(e.target.files[0]);
+                    setIsModalOpen(false);
+                  }}
                 />
               </label>
             </div>

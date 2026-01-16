@@ -1,9 +1,21 @@
 import { useEffect, useState } from "react";
 import { fetchAllUsers, updateUserRole, deleteUser } from "../api/dashboardApi";
+import ConfirmationDialog from "./ConfirmationDialog";
+
+const formatDateSerbian = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
 
 export default function Dashboard() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -32,17 +44,26 @@ export default function Dashboard() {
   };
 
   const handleDeleteUser = async (userId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this user?"
-    );
-    if (!confirmed) return;
+    setUserToDelete(userId);
+    setShowConfirmDialog(true);
+  };
 
+  const confirmDelete = async () => {
     try {
-      await deleteUser(userId);
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      await deleteUser(userToDelete);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete));
+      setShowConfirmDialog(false);
+      setUserToDelete(null);
     } catch (err) {
       setError("Failed to delete user");
+      setShowConfirmDialog(false);
+      setUserToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmDialog(false);
+    setUserToDelete(null);
   };
 
   if (error) {
@@ -124,7 +145,7 @@ export default function Dashboard() {
                       {user.lastName}
                     </td>
                     <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
-                      {user.birthDate}
+                      {formatDateSerbian(user.birthDate)}
                     </td>
                     <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
                       {user.email}
@@ -146,7 +167,7 @@ export default function Dashboard() {
                       {user.country}
                     </td>
                     <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
-                      {user.createdAt}
+                      {formatDateSerbian(user.createdAt)}
                     </td>
                     <td className="px-4 py-3 border-2 border-[#353a7c]">
                       <button
@@ -163,6 +184,16 @@ export default function Dashboard() {
           </table>
         </div>
       </div>
+
+      <ConfirmationDialog
+        isOpen={showConfirmDialog}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

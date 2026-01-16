@@ -1,4 +1,5 @@
 import React from "react";
+import ProfileButton from "../components/ProfileButton";
 import LogoutButton from "../components/LogoutButton";
 import Dashboard from "../components/Dashboard";
 
@@ -17,7 +18,11 @@ const AdminPage = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-white">Admin Dashboard</h1>
-          <LogoutButton />
+
+          <div className="flex gap-4">
+            <ProfileButton />
+            <LogoutButton />
+          </div>
         </div>
         <Dashboard />
       </div>
