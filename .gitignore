@@ -10,3 +10,5 @@ env/
 # Python cache
 __pycache__/
 *.pyc
+
+server/uploads

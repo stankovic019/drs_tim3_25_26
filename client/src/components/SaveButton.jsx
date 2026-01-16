@@ -6,6 +6,7 @@ const SaveButton = ({ onClick, children = "Save" }) => {
       <button className="button" onClick={onClick}>
         <div>
           <span>{children}</span>
+
         </div>
       </button>
     </StyledSaveButton>

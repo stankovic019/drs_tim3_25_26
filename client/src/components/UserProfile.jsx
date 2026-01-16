@@ -20,7 +20,7 @@ export default function UserProfile() {
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const [tempImage, setTempImage] = useState("");
   // userId uzimamo iz localStorage (kao i svuda kod tebe)
   const userId = localStorage.getItem("userId");
 
@@ -30,6 +30,7 @@ export default function UserProfile() {
         setLoading(true);
         const data = await fetchMyProfile(userId);
         setUser(data);
+        setTempImage(data.profileImage || "");
       } catch (err) {
         setError("Failed to load profile");
       } finally {
@@ -69,6 +70,8 @@ export default function UserProfile() {
         profileImage: response.filename,
       }));
       setIsModalOpen(false);
+      setTempImage(response.imageUrl);
+      console.log("Image uploaded:", response.imageUrl);
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || "Image upload failed");
@@ -119,10 +122,10 @@ export default function UserProfile() {
             onClick={() => setIsModalOpen(true)}
             className="relative w-40 h-40 cursor-pointer group"
           >
-            {user.profileImage ? (
+            {tempImage ? (
               <>
                 <img
-                  src={user.profileImage}
+                  src={tempImage}
                   alt="Profile Preview"
                   className="w-full h-full rounded-[5px] border-2 border-[#353a7c] object-cover group-hover:opacity-80 transition-opacity shadow-[4px_4px_#353a7c]"
                 />
