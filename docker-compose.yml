@@ -1,14 +1,27 @@
 services:
   db:
-    image: postgres:16
+    image: mysql:8.0
+    container_name: drs_tim3_25_26-mysql
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: quiz_db
+      MYSQL_DATABASE: quiz_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpass
+      MYSQL_ROOT_PASSWORD: rootpass
     ports:
-      - "5433:5432"
+      - "3306:3306"
     volumes:
-      - drs_pgdata:/var/lib/postgresql/data
+      - drs_mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
-  drs_pgdata:
+  drs_mysqldata:

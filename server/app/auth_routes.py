@@ -6,6 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from app.extensions import db
 from app.models import User, TokenBlocklist
+from app.mail_service import send_role_changed_email
 
 def require_role(*allowed_roles):
     claims = get_jwt()
@@ -172,8 +173,23 @@ def set_user_role(user_id):
     if not user:
         return jsonify({"message": "User not found"}), 404
 
+    old_role = user.role
     user.role = new_role
     db.session.commit()
+
+    if old_role == "PLAYER" and new_role == "MODERATOR":
+        try: 
+            send_role_changed_email(user.email, new_role)
+
+        except Exception as e:
+            print(f"Failed to send role changed email: {e}")
+            return jsonify(
+                {
+                    "message": "Role updated, but failed to send email notification",
+                    "id": user.id,
+                    "role": user.role
+                }
+            ), 200
 
     return jsonify({"message": "Role updated", "id": user.id, "role": user.role}), 200
 
