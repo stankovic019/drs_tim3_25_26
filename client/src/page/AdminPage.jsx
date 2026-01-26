@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import ProfileButton from "../components/ProfileButton";
 import LogoutButton from "../components/LogoutButton";
 import Dashboard from "../components/Dashboard";
 import PendingQuizzes from "../components/PendingQuizzes";
 import ApprovedQuizzes from "../components/ApprovedQuizzes";
+import Footer from "../components/Footer";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("pending");
@@ -24,7 +25,7 @@ const AdminPage = () => {
 
   return (
     <div
-      className="min-h-screen bg-gray-100 p-8"
+      className="min-h-screen bg-gray-100 p-8 pb-32"
       style={{
         backgroundImage: "url(/background.png)",
         backgroundSize: "cover",
@@ -33,11 +34,14 @@ const AdminPage = () => {
         backgroundAttachment: "fixed",
       }}
     >
+      <img
+        src="/admin-dashboard.png"
+        alt="Admin Dashboard"
+        className="fixed -top-6 -left-12 h-64 w-auto object-contain z-40 dashboard-logo-pulse"
+      />
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white">Admin Dashboard</h1>
-
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-wrap gap-4 items-center">
             <button
               className={tabClass(activeTab === "users")}
               onClick={() => setActiveTab("users")}
@@ -62,6 +66,8 @@ const AdminPage = () => {
                 Approved Quizzes
               </span>
             </button>
+          </div>
+          <div className="flex gap-4 items-center">
             <ProfileButton />
             <LogoutButton />
           </div>
@@ -73,6 +79,7 @@ const AdminPage = () => {
         ) : (
           <Dashboard />
         )}
+        <Footer />
       </div>
     </div>
   );

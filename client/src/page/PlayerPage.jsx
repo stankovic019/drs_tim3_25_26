@@ -1,12 +1,12 @@
-import React from "react";
 import LogoutButton from "../components/LogoutButton";
 import ProfileButton from "../components/ProfileButton";
 import PlayerQuizPlay from "../components/PlayerQuizPlay";
+import Footer from "../components/Footer";
 
 const PlayerPage = () => {
   return (
     <div
-      className="min-h-screen bg-gray-100 p-8"
+      className="min-h-screen bg-gray-100 p-8 pb-32"
       style={{
         backgroundImage: "url(/background.png)",
         backgroundSize: "cover",
@@ -15,15 +15,21 @@ const PlayerPage = () => {
         backgroundAttachment: "fixed",
       }}
     >
+      <img
+        src="/player-dashboard.png"
+        alt="Player Dashboard"
+        className="fixed -top-6 -left-12 h-64 w-auto object-contain z-40 dashboard-logo-pulse"
+      />
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Player Dashboard</h1>
+          <div />
           <div className="flex gap-4">
             <ProfileButton />
             <LogoutButton />
           </div>
         </div>
         <PlayerQuizPlay />
+        <Footer />
       </div>
     </div>
   );

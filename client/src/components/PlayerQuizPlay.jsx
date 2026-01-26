@@ -9,7 +9,10 @@ import {
 } from "../api/quizApi";
 import { io } from "socket.io-client";
 
-const badge = (text) =>
+const countBadge = (text) =>
+  `px-4 py-2 rounded-full text-lg font-extrabold border-2 border-[#353a7c] shadow-[3px_3px_#353a7c] bg-[linear-gradient(45deg,#353a7c,#2872CB)] text-white`;
+
+const timeBadge = (text) =>
   `px-3 py-1 rounded-full text-xs font-bold border-2 border-[#353a7c] shadow-[3px_3px_#353a7c] bg-white text-[#353a7c]`;
 
 export default function PlayerQuizPlay() {
@@ -19,7 +22,9 @@ export default function PlayerQuizPlay() {
 
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(null);
+  const [totalDuration, setTotalDuration] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | in_progress | processing | done
   const [result, setResult] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -57,7 +62,9 @@ export default function PlayerQuizPlay() {
     timerRef.current = null;
     pollRef.current = null;
     setAnswers({});
+    setCurrentQuestionIndex(0);
     setTimeLeft(null);
+    setTotalDuration(null);
     setStatus("idle");
     setResult(null);
     setLeaderboard([]);
@@ -67,6 +74,7 @@ export default function PlayerQuizPlay() {
   const startTimer = (duration) => {
     if (timerRef.current) clearInterval(timerRef.current);
     setTimeLeft(duration);
+    setTotalDuration(duration);
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev === null) return prev;
@@ -107,6 +115,7 @@ export default function PlayerQuizPlay() {
       const details = await fetchQuizDetails(quizId);
       setActiveQuiz(details);
       setStatus("in_progress");
+      setCurrentQuestionIndex(0);
       startTimer(details.durationSeconds);
       const lb = await fetchLeaderboard(quizId);
       setLeaderboard(lb);
@@ -116,6 +125,7 @@ export default function PlayerQuizPlay() {
           const details = await fetchQuizDetails(quizId);
           setActiveQuiz(details);
           setStatus("done");
+          setCurrentQuestionIndex(0);
           const res = await fetchMyResult(quizId);
           if (res.status === 200) {
             setResult(res.data);
@@ -147,13 +157,30 @@ export default function PlayerQuizPlay() {
       answerIds,
     }));
 
+  const handleNextQuestion = () => {
+    if (!activeQuiz) return;
+    setCurrentQuestionIndex((prev) =>
+      Math.min(prev + 1, activeQuiz.questions.length - 1)
+    );
+  };
+
   const handleSubmit = async () => {
     if (!activeQuiz) return;
     setError("");
     try {
       setIsSubmitting(true);
-      const res = await submitQuizAttempt(activeQuiz.id, buildPayload());
+      const remainingSeconds =
+        typeof timeLeft === "number" ? timeLeft : undefined;
+      const res = await submitQuizAttempt(
+        activeQuiz.id,
+        buildPayload(),
+        remainingSeconds
+      );
       if (res.status === 202) {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
         setStatus("processing");
         startPolling(activeQuiz.id);
       }
@@ -196,10 +223,10 @@ export default function PlayerQuizPlay() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
-      <div className="bg-white border-2 border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-5">
+      <div className="bg-[linear-gradient(45deg,#efad21,#ffd60f)] border-2 border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold text-[#353a7c]">Available Quizzes</h2>
-          <span className={badge(quizzes.length)}>{quizzes.length}</span>
+          <span className={countBadge(quizzes.length)}>{quizzes.length}</span>
         </div>
         {loading ? (
           <p className="text-[#666] font-semibold">Loading...</p>
@@ -228,11 +255,30 @@ export default function PlayerQuizPlay() {
         )}
       </div>
 
-      <div className="bg-white border-2 border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-6">
+      <div className="bg-[linear-gradient(45deg,#efad21,#ffd60f)] border-2 border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-[#353a7c]">Quiz Session</h2>
-          {timeLeft !== null && (
-            <span className={badge(timeLeft)}>{timeLeft}s left</span>
+          {timeLeft !== null && totalDuration !== null && (
+            <div className="flex flex-col items-end gap-2 min-w-[180px]">
+              <span className={timeBadge(`${timeLeft}s left`)}>
+                {timeLeft}s left
+              </span>
+              <div className="w-full h-2 border-2 border-[#353a7c] rounded-full bg-white shadow-[2px_2px_#353a7c] overflow-hidden">
+                <div
+                  className="h-full bg-[linear-gradient(45deg,#353a7c,#2872CB)] transition-[width] duration-500"
+                  style={{
+                    width: `${
+                      totalDuration > 0
+                        ? Math.max(
+                            0,
+                            Math.min(100, (timeLeft / totalDuration) * 100)
+                          )
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
           )}
         </div>
 
@@ -288,47 +334,87 @@ export default function PlayerQuizPlay() {
               {activeQuiz.title}
             </h3>
             <div className="space-y-4">
-              {activeQuiz.questions.map((q, idx) => (
-                <div
-                  key={q.id}
-                  className="border-2 border-[#353a7c] rounded-lg bg-white shadow-[3px_3px_#353a7c] p-4"
-                >
-                  <p className="text-[#353a7c] font-bold mb-2">
-                    {idx + 1}. {q.text}
-                  </p>
-                  <div className="space-y-2">
-                    {q.answers.map((a) => (
-                      <label
-                        key={a.id}
-                        className="flex items-center gap-2 text-[#666] font-semibold"
-                      >
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 accent-[#353a7c]"
-                          checked={
-                            (answers[q.id] || []).includes(a.id) || false
-                          }
-                          onChange={(e) =>
-                            toggleAnswer(q.id, a.id, e.target.checked)
-                          }
-                        />
-                        {a.text}
-                      </label>
-                    ))}
+              {activeQuiz.questions.length > 0 && (() => {
+                const q = activeQuiz.questions[currentQuestionIndex];
+                return (
+                  <div
+                    key={q.id}
+                    className="border-2 border-[#353a7c] rounded-lg bg-white shadow-[3px_3px_#353a7c] p-4"
+                  >
+                    <p className="text-[#353a7c] font-bold mb-2">
+                      {currentQuestionIndex + 1}. {q.text}
+                    </p>
+                    {typeof q.correctCount === "number" && (
+                      <p className="text-xs font-semibold text-[#666] mb-2">
+                        Tacnih odgovora: {q.correctCount}
+                      </p>
+                    )}
+                    <div className="space-y-2">
+                      {q.answers.map((a) => (
+                        <label
+                          key={a.id}
+                          className="flex items-center gap-2 text-[#666] font-semibold cursor-pointer"
+                        >
+                          <span className="relative inline-flex items-center justify-center">
+                            <input
+                              type="checkbox"
+                              checked={(answers[q.id] || []).includes(a.id)}
+                              onChange={(e) =>
+                                toggleAnswer(q.id, a.id, e.target.checked)
+                              }
+                              className="peer sr-only"
+                            />
+                            <span className="w-4 h-4 rounded-[4px] border-2 border-[#353a7c] bg-white shadow-[2px_2px_#353a7c] transition-colors duration-200 peer-checked:bg-[#353a7c] peer-checked:border-[#353a7c]" />
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="pointer-events-none absolute w-3 h-3 text-white opacity-0 transition-opacity duration-200 peer-checked:opacity-100"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M5 12l4 4 10-10" />
+                            </svg>
+                          </span>
+                          {a.text}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })()}
             </div>
             <div className="flex justify-end">
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || status === "processing"}
-                className="group relative outline-0 px-8 h-14 border border-solid border-transparent rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out active:scale-[0.95] bg-[linear-gradient(45deg,#353a7c,#2872CB)] hover:bg-[linear-gradient(45deg,#2a2d63,#1f54a0)] hover:shadow-2xl hover:-translate-y-0.5 [box-shadow:#3c40434d_0_1px_2px_0,#3c404326_0_2px_6px_2px,#0000004d_0_30px_60px_-30px,#34343459_0_-2px_6px_0_inset]"
-              >
-                <span className="text-xl font-extrabold leading-none text-white transition-all duration-300">
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </span>
-              </button>
+              {activeQuiz.questions.length > 0 &&
+              currentQuestionIndex < activeQuiz.questions.length - 1 ? (
+                <button
+                  onClick={handleNextQuestion}
+                  disabled={(answers[activeQuiz.questions[currentQuestionIndex].id] || []).length === 0}
+                  className="group relative outline-0 px-8 h-14 border border-solid border-transparent rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out active:scale-[0.95] bg-[linear-gradient(45deg,#353a7c,#2872CB)] hover:bg-[linear-gradient(45deg,#2a2d63,#1f54a0)] hover:shadow-2xl hover:-translate-y-0.5 [box-shadow:#3c40434d_0_1px_2px_0,#3c404326_0_2px_6px_2px,#0000004d_0_30px_60px_-30px,#34343459_0_-2px_6px_0_inset] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="text-xl font-extrabold leading-none text-white transition-all duration-300">
+                    Next
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={
+                    isSubmitting ||
+                    status === "processing" ||
+                    (activeQuiz.questions.length > 0 &&
+                      (answers[
+                        activeQuiz.questions[currentQuestionIndex].id
+                      ] || []).length === 0)
+                  }
+                  className="group relative outline-0 px-8 h-14 border border-solid border-transparent rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out active:scale-[0.95] bg-[linear-gradient(45deg,#353a7c,#2872CB)] hover:bg-[linear-gradient(45deg,#2a2d63,#1f54a0)] hover:shadow-2xl hover:-translate-y-0.5 [box-shadow:#3c40434d_0_1px_2px_0,#3c404326_0_2px_6px_2px,#0000004d_0_30px_60px_-30px,#34343459_0_-2px_6px_0_inset] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="text-xl font-extrabold leading-none text-white transition-all duration-300">
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         )}

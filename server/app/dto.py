@@ -35,9 +35,10 @@ class QuestionDTO:
     text: str
     points: int
     answers: list[AnswerOptionDTO] = field(default_factory=list)
+    correct_count: int | None = None
 
     @classmethod
-    def from_model(cls, model, include_correct=False):
+    def from_model(cls, model, include_correct=False, include_correct_count=False):
         return cls(
             id=model.id,
             text=model.text,
@@ -46,15 +47,23 @@ class QuestionDTO:
                 AnswerOptionDTO.from_model(a, include_correct=include_correct)
                 for a in model.answers
             ],
+            correct_count=(
+                sum(1 for a in model.answers if a.is_correct)
+                if include_correct_count
+                else None
+            ),
         )
 
     def to_dict(self):
-        return {
-            "id": self.id,
-            "text": self.text,
-            "points": self.points,
-            "answers": [a.to_dict() for a in self.answers],
-        }
+        return _omit_none(
+            {
+                "id": self.id,
+                "text": self.text,
+                "points": self.points,
+                "answers": [a.to_dict() for a in self.answers],
+                "correctCount": self.correct_count,
+            }
+        )
 
 
 @dataclass
@@ -76,6 +85,7 @@ class QuizDTO:
         author_name=None,
         include_questions=False,
         include_correct=False,
+        include_correct_count=False,
     ):
         return cls(
             id=model.id,
@@ -87,7 +97,11 @@ class QuizDTO:
             author_name=author_name,
             created_at=model.created_at.isoformat() if model.created_at else None,
             questions=[
-                QuestionDTO.from_model(q, include_correct=include_correct)
+                QuestionDTO.from_model(
+                    q,
+                    include_correct=include_correct,
+                    include_correct_count=include_correct_count,
+                )
                 for q in (model.questions if include_questions else [])
             ],
         )

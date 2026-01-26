@@ -71,7 +71,6 @@ export default function UserProfile() {
       }));
       setIsModalOpen(false);
       setTempImage(response.imageUrl);
-      console.log("Image uploaded:", response.imageUrl);
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || "Image upload failed");

@@ -64,9 +64,10 @@ export async function startQuizAttempt(quizId) {
 }
 
 // ---------------- SUBMIT QUIZ (PLAYER) ----------------
-export async function submitQuizAttempt(quizId, answers) {
+export async function submitQuizAttempt(quizId, answers, remainingSeconds) {
   const response = await axiosInstance.post(`/quizzes/${quizId}/submit`, {
     answers,
+    remainingSeconds,
   });
   return response;
 }

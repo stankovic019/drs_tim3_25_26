@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from app.extensions import db
-from app.models import User, TokenBlocklist
+from app.models import User, TokenBlocklist, Quiz, QuizAttempt
 from app.dto import UserDTO
 from app.mail_service import send_role_changed_email
 
@@ -48,6 +48,9 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"message": "Email already exists"}), 400
 
+    gender_value = (gender or "").strip().lower()
+    default_profile_image = "/male.png" if gender_value == "male" else "/female.png"
+
     user = User(
         first_name=first_name,
         last_name=last_name,
@@ -58,7 +61,7 @@ def register():
         country=country,
         street=street,
         street_number=street_number,
-        profile_image=None,  
+        profile_image=default_profile_image,
         failed_login_attempts=0,
         locked_until=None,
     )
@@ -239,6 +242,15 @@ def delete_user(user_id):
     user = User.query.get(user_id)
     if not user:
         return jsonify({"message": "User not found"}), 404
+
+    # Remove related quiz attempts (as player)
+    QuizAttempt.query.filter_by(player_id=user_id).delete(synchronize_session=False)
+
+    # Remove quizzes authored by this user (and related attempts)
+    authored_quizzes = Quiz.query.filter_by(author_id=user_id).all()
+    for quiz in authored_quizzes:
+        QuizAttempt.query.filter_by(quiz_id=quiz.id).delete(synchronize_session=False)
+        db.session.delete(quiz)
 
     db.session.delete(user)
     db.session.commit()

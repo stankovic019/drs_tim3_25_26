@@ -22,7 +22,6 @@ export default function Dashboard() {
       try {
         const data = await fetchAllUsers();
         setUsers(data);
-        console.log(data);
       } catch (err) {
         setError("Failed to load users");
       }
@@ -86,36 +85,36 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="border-3 bg-[#2872CB] border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-5">
+      <div className="border-3 bg-[linear-gradient(45deg,#efad21,#ffd60f)] border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-5">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse ">
+          <table className="border-collapse w-full">
             <thead>
               <tr className="bg-[#fff]">
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
 
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   First Name
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   Last Name
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   Birthday
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   Email
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   Role
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   Country
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   Created At
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[#353a7c] border-2 border-[#353a7c]">
                   Delete
                 </th>
               </tr>
@@ -131,46 +130,50 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ) : (
-                users.map((user, index) => (
+                users.map((user) => (
                   <tr
                     key={user.id}
                     className="bg-[#fff] transition-all duration-200 hover:bg-[#f5f5f5]"
                   >
-                    <td className="px-4  py-2 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
-                      <img src={user.profileImage} alt="NoImage" className="max-w-[100px] aspect-square rounded-md" />
+                    <td className="px-4 py-2 text-sm text-[#666] font-semibold border-2 border-[#353a7c] text-center">
+                      <img
+                        src={user.profileImage}
+                        alt="NoImage"
+                        className="max-w-[100px] aspect-square rounded-md mx-auto"
+                      />
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c] text-center">
                       {user.firstName}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c] text-center">
                       {user.lastName}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c] text-center">
                       {formatDateSerbian(user.birthDate)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c] text-center">
                       {user.email}
                     </td>
-                    <td className="px-4 py-3 border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 border-2 border-[#353a7c] text-center">
                       <select
                         value={user.role}
                         onChange={(e) =>
                           handleRoleChange(user.id, e.target.value)
                         }
-                        className="w-full h-[40px] border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 cursor-pointer focus:border-[#efad21] focus:shadow-[4px_4px_#efad21]"
+                        className="w-full h-[40px] border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 cursor-pointer focus:border-[#efad21] focus:shadow-[4px_4px_#efad21] text-center"
                       >
                         <option value="PLAYER">PLAYER</option>
                         <option value="MODERATOR">MODERATOR</option>
                         <option value="ADMIN">ADMIN</option>
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c] text-center">
                       {user.country}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 text-sm text-[#666] font-semibold border-2 border-[#353a7c] text-center">
                       {formatDateSerbian(user.createdAt)}
                     </td>
-                    <td className="px-4 py-3 border-2 border-[#353a7c]">
+                    <td className="px-4 py-3 border-2 border-[#353a7c] text-center">
                       <button
                         onClick={() => handleDeleteUser(user.id)}
                         className="relative overflow-hidden w-full h-[40px] border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] cursor-pointer transition-all duration-300 hover:text-[#e8e8e8] hover:shadow-[6px_6px_#9b0101] hover:border-[#fff] z-[1] before:content-[''] before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:bg-[#c80404] before:z-[-1] before:transition-all before:duration-300 hover:before:w-full"

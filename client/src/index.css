@@ -1,2 +1,19 @@
 @import "tailwindcss";
 
+.dashboard-logo-pulse {
+  animation: dashboardLogoPulse 3s ease-in-out infinite;
+  transform-origin: top left;
+}
+
+@keyframes dashboardLogoPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+

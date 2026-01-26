@@ -2,16 +2,19 @@ import { useState } from "react";
 import { createQuiz } from "../api/quizApi";
 
 const emptyAnswer = () => ({ text: "", isCorrect: false });
-const emptyQuestion = () => ({
-  text: "",
-  points: 1,
-  answers: [emptyAnswer(), emptyAnswer()],
-});
-
 export default function CreateQuizForm({ onCreated }) {
+  const buildQuestion = (id, order) => ({
+    id: `q-${id}`,
+    order,
+    text: "",
+    points: 1,
+    answers: [emptyAnswer(), emptyAnswer()],
+  });
+  const [nextQuestionId, setNextQuestionId] = useState(1);
+  const [nextQuestionOrder, setNextQuestionOrder] = useState(1);
   const [title, setTitle] = useState("");
   const [durationSeconds, setDurationSeconds] = useState(30);
-  const [questions, setQuestions] = useState([emptyQuestion()]);
+  const [questions, setQuestions] = useState(() => [buildQuestion(0, 0)]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +38,12 @@ export default function CreateQuizForm({ onCreated }) {
   };
 
   const addQuestion = () => {
-    setQuestions((prev) => [...prev, emptyQuestion()]);
+    setQuestions((prev) => [
+      buildQuestion(nextQuestionId, nextQuestionOrder),
+      ...prev,
+    ]);
+    setNextQuestionId((prev) => prev + 1);
+    setNextQuestionOrder((prev) => prev + 1);
   };
 
   const removeQuestion = (index) => {
@@ -71,20 +79,20 @@ export default function CreateQuizForm({ onCreated }) {
 
     for (let i = 0; i < questions.length; i += 1) {
       const q = questions[i];
-      if (!q.text.trim()) return `Question ${i + 1} text is required`;
+      if (!q.text.trim()) return `Question ${q.order + 1} text is required`;
       if (!Number.isInteger(Number(q.points)) || q.points <= 0) {
-        return `Question ${i + 1} points must be a positive integer`;
+        return `Question ${q.order + 1} points must be a positive integer`;
       }
       if (!q.answers || q.answers.length < 2) {
-        return `Question ${i + 1} must have at least 2 answers`;
+        return `Question ${q.order + 1} must have at least 2 answers`;
       }
       const hasCorrect = q.answers.some((a) => a.isCorrect);
       if (!hasCorrect) {
-        return `Question ${i + 1} must have at least 1 correct answer`;
+        return `Question ${q.order + 1} must have at least 1 correct answer`;
       }
       for (let j = 0; j < q.answers.length; j += 1) {
         if (!q.answers[j].text.trim()) {
-          return `Answer ${j + 1} for question ${i + 1} is required`;
+          return `Answer ${j + 1} for question ${q.order + 1} is required`;
         }
       }
     }
@@ -105,14 +113,16 @@ export default function CreateQuizForm({ onCreated }) {
     const payload = {
       title: title.trim(),
       durationSeconds: Number(durationSeconds),
-      questions: questions.map((q) => ({
-        text: q.text.trim(),
-        points: Number(q.points),
-        answers: q.answers.map((a) => ({
-          text: a.text.trim(),
-          isCorrect: Boolean(a.isCorrect),
+      questions: [...questions]
+        .sort((a, b) => a.order - b.order)
+        .map((q) => ({
+          text: q.text.trim(),
+          points: Number(q.points),
+          answers: q.answers.map((a) => ({
+            text: a.text.trim(),
+            isCorrect: Boolean(a.isCorrect),
+          })),
         })),
-      })),
     };
 
     try {
@@ -121,7 +131,9 @@ export default function CreateQuizForm({ onCreated }) {
       setSuccess("Quiz created and sent for approval");
       setTitle("");
       setDurationSeconds(30);
-      setQuestions([emptyQuestion()]);
+      setNextQuestionId(1);
+      setNextQuestionOrder(1);
+      setQuestions([buildQuestion(0, 0)]);
       if (onCreated) onCreated();
     } catch {
       setError("Failed to create quiz");
@@ -131,21 +143,29 @@ export default function CreateQuizForm({ onCreated }) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mb-8 bg-white border-2 border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-6"
-    >
+    <form onSubmit={handleSubmit} className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-[#353a7c]">Create Quiz</h2>
-        <button
-          type="button"
-          onClick={addQuestion}
-          className="group relative outline-0 px-6 h-12 border border-solid border-transparent rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out active:scale-[0.95] bg-[linear-gradient(45deg,#353a7c,#2872CB)] hover:bg-[linear-gradient(45deg,#2a2d63,#1f54a0)] hover:shadow-2xl hover:-translate-y-0.5 [box-shadow:#3c40434d_0_1px_2px_0,#3c404326_0_2px_6px_2px,#0000004d_0_30px_60px_-30px,#34343459_0_-2px_6px_0_inset]"
-        >
-          <span className="text-lg font-extrabold leading-none text-white transition-all duration-300">
-            + Add Question
-          </span>
-        </button>
+        <h2 className="text-2xl font-bold text-white">Create Quiz</h2>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={addQuestion}
+            className="group relative outline-0 px-6 h-12 border border-solid border-transparent rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out active:scale-[0.95] bg-[linear-gradient(45deg,#353a7c,#2872CB)] hover:bg-[linear-gradient(45deg,#2a2d63,#1f54a0)] hover:shadow-2xl hover:-translate-y-0.5 [box-shadow:#3c40434d_0_1px_2px_0,#3c404326_0_2px_6px_2px,#0000004d_0_30px_60px_-30px,#34343459_0_-2px_6px_0_inset]"
+          >
+            <span className="text-lg font-extrabold leading-none text-white transition-all duration-300">
+              + Add Question
+            </span>
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group relative outline-0 px-6 h-12 border border-solid border-transparent rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out active:scale-[0.95] bg-[linear-gradient(45deg,#353a7c,#2872CB)] hover:bg-[linear-gradient(45deg,#2a2d63,#1f54a0)] hover:shadow-2xl hover:-translate-y-0.5 [box-shadow:#3c40434d_0_1px_2px_0,#3c404326_0_2px_6px_2px,#0000004d_0_30px_60px_-30px,#34343459_0_-2px_6px_0_inset] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <span className="text-lg font-extrabold leading-none text-white transition-all duration-300">
+              {isSubmitting ? "Creating..." : "Create Quiz"}
+            </span>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -159,42 +179,43 @@ export default function CreateQuizForm({ onCreated }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-bold text-[#353a7c] mb-2">
-            Quiz Title
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full h-[48px] border-2 border-[#353a7c] rounded-[6px] bg-[#fff] shadow-[3px_3px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 focus:border-[#efad21] focus:shadow-[3px_3px_#efad21]"
-            placeholder="e.g. General Knowledge"
-          />
+      <div className="bg-[linear-gradient(45deg,#efad21,#ffd60f)] border-2 border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+          <label className="block text-base font-bold text-[#353a7c] mb-2">
+              Quiz Title
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full h-[48px] border-2 border-[#353a7c] rounded-[6px] bg-[#fff] shadow-[3px_3px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 focus:border-[#efad21] focus:shadow-[3px_3px_#efad21]"
+              placeholder="e.g. General Knowledge"
+            />
+          </div>
+          <div>
+          <label className="block text-base font-bold text-[#353a7c] mb-2">
+              Duration (seconds)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={durationSeconds}
+              onChange={(e) => setDurationSeconds(e.target.value)}
+              className="w-full h-[48px] border-2 border-[#353a7c] rounded-[6px] bg-[#fff] shadow-[3px_3px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 focus:border-[#efad21] focus:shadow-[3px_3px_#efad21]"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-bold text-[#353a7c] mb-2">
-            Duration (seconds)
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={durationSeconds}
-            onChange={(e) => setDurationSeconds(e.target.value)}
-            className="w-full h-[48px] border-2 border-[#353a7c] rounded-[6px] bg-[#fff] shadow-[3px_3px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 focus:border-[#efad21] focus:shadow-[3px_3px_#efad21]"
-          />
-        </div>
-      </div>
 
-      <div className="space-y-5">
-        {questions.map((q, qIndex) => (
+        <div className="space-y-5">
+          {questions.map((q, qIndex) => (
           <div
-            key={`q-${qIndex}`}
+            key={q.id}
             className="border-2 border-[#353a7c] rounded-xl bg-white shadow-[4px_4px_#353a7c] p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h3 className="text-lg font-bold text-[#353a7c]">
-                Question {qIndex + 1}
+                Question {q.order + 1}
               </h3>
               {questions.length > 1 && (
                 <button
@@ -209,7 +230,7 @@ export default function CreateQuizForm({ onCreated }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-bold text-[#353a7c] mb-2">
+                <label className="block text-base font-bold text-[#353a7c] mb-2">
                   Question text
                 </label>
                 <input
@@ -223,7 +244,7 @@ export default function CreateQuizForm({ onCreated }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#353a7c] mb-2">
+                <label className="block text-base font-bold text-[#353a7c] mb-2">
                   Points
                 </label>
                 <input
@@ -266,20 +287,34 @@ export default function CreateQuizForm({ onCreated }) {
                     className="flex-1 min-w-[220px] h-[42px] border-2 border-[#353a7c] rounded-[6px] bg-[#fff] shadow-[3px_3px_#353a7c] font-semibold text-[#666] px-3 outline-none transition-all duration-300 focus:border-[#efad21] focus:shadow-[3px_3px_#efad21]"
                     placeholder={`Answer ${aIndex + 1}`}
                   />
-                  <label className="flex items-center gap-2 text-sm font-bold text-[#353a7c]">
-                    <input
-                      type="checkbox"
-                      checked={a.isCorrect}
-                      onChange={(e) =>
-                        updateAnswer(
-                          qIndex,
-                          aIndex,
-                          "isCorrect",
-                          e.target.checked
-                        )
-                      }
-                      className="w-4 h-4 accent-[#353a7c]"
-                    />
+                  <label className="flex items-center gap-2 text-base font-bold text-[#353a7c] cursor-pointer">
+                    <span className="relative inline-flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={a.isCorrect}
+                        onChange={(e) =>
+                          updateAnswer(
+                            qIndex,
+                            aIndex,
+                            "isCorrect",
+                            e.target.checked
+                          )
+                        }
+                        className="peer sr-only"
+                      />
+                      <span className="w-4 h-4 rounded-[4px] border-2 border-[#353a7c] bg-white shadow-[2px_2px_#353a7c] transition-colors duration-200 peer-checked:bg-[#353a7c] peer-checked:border-[#353a7c]" />
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="pointer-events-none absolute w-3 h-3 text-white opacity-0 transition-opacity duration-200 peer-checked:opacity-100"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M5 12l4 4 10-10" />
+                      </svg>
+                    </span>
                     Correct
                   </label>
                   {q.answers.length > 2 && (
@@ -296,18 +331,9 @@ export default function CreateQuizForm({ onCreated }) {
             </div>
           </div>
         ))}
-      </div>
+        </div>
 
-      <div className="mt-6 flex justify-end">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="group relative outline-0 px-8 h-14 border border-solid border-transparent rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out active:scale-[0.95] bg-[linear-gradient(45deg,#353a7c,#2872CB)] hover:bg-[linear-gradient(45deg,#2a2d63,#1f54a0)] hover:shadow-2xl hover:-translate-y-0.5 [box-shadow:#3c40434d_0_1px_2px_0,#3c404326_0_2px_6px_2px,#0000004d_0_30px_60px_-30px,#34343459_0_-2px_6px_0_inset] disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <span className="text-xl font-extrabold leading-none text-white transition-all duration-300">
-            {isSubmitting ? "Creating..." : "Create Quiz"}
-          </span>
-        </button>
+        <div className="mt-6" />
       </div>
     </form>
   );

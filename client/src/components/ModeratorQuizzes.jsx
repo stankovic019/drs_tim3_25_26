@@ -88,7 +88,7 @@ export default function ModeratorQuizzes({ refreshToken }) {
   }, [token]);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-[#353a7c] shadow-[5px_5px_#353a7c]">
+    <div className="bg-[linear-gradient(45deg,#efad21,#ffd60f)] rounded-lg shadow-lg p-6 border-2 border-[#353a7c] shadow-[5px_5px_#353a7c]">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-[#353a7c]">My Quizzes</h2>
         <button

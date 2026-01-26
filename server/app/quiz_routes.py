@@ -7,7 +7,7 @@ from app.models import Quiz, Question, AnswerOption, QuizAttempt, User
 from app.dto import QuizDTO, QuizAttemptDTO
 from app.quiz_processing import process_quiz_submission
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 quiz_bp = Blueprint("quizzes", __name__, url_prefix="/api/quizzes")
 
@@ -225,7 +225,11 @@ def get_quiz_details(quiz_id):
     if role == "PLAYER" and quiz.status != "APPROVED":
         return jsonify({"message": "Forbidden"}), 403
 
-    dto = QuizDTO.from_model(quiz, include_questions=True)
+    dto = QuizDTO.from_model(
+        quiz,
+        include_questions=True,
+        include_correct_count=role == "PLAYER",
+    )
     return jsonify(dto.to_dict()), 200
 
 # ---------------- POKRENI KVIZ ----------------
@@ -310,6 +314,7 @@ def submit_quiz_attempt(quiz_id):
 
     data = request.get_json() or {}
     answers = data.get("answers") or []
+    remaining_seconds = data.get("remainingSeconds")
 
     if not isinstance(answers, list):
         return jsonify({"message": "answers must be a list"}), 400
@@ -345,7 +350,16 @@ def submit_quiz_attempt(quiz_id):
         if not chosen.issubset(valid_ids):
             return jsonify({"message": f"Invalid answerIds for question {q.id}"}), 400
 
-    attempt.finished_at = now
+    if (
+        isinstance(remaining_seconds, int)
+        and quiz.duration_seconds is not None
+        and remaining_seconds >= 0
+        and remaining_seconds <= quiz.duration_seconds
+    ):
+        elapsed = quiz.duration_seconds - remaining_seconds
+        attempt.finished_at = attempt.started_at + timedelta(seconds=elapsed)
+    else:
+        attempt.finished_at = now
     attempt.score = None
     db.session.commit()
 
@@ -413,6 +427,7 @@ def delete_quiz(quiz_id):
     if not require_role("ADMIN") and quiz.author_id != user_id:
         return jsonify({"message": "Forbidden"}), 403
 
+    QuizAttempt.query.filter_by(quiz_id=quiz_id).delete(synchronize_session=False)
     db.session.delete(quiz)
     db.session.commit()
     return jsonify({"message": "Quiz deleted", "id": quiz_id}), 200

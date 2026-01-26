@@ -1,14 +1,14 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import LogoutButton from "../components/LogoutButton";
 import UserProfile from "../components/UserProfile.jsx";
+import Footer from "../components/Footer";
 
 const UserProfilePage = () => {
   const navigate = useNavigate();
 
   return (
     <div
-      className="min-h-screen bg-gray-100 p-8"
+      className="min-h-screen bg-gray-100 p-8 pb-32"
       style={{
         backgroundImage: "url(/background.png)",
         backgroundSize: "cover",
@@ -33,6 +33,7 @@ const UserProfilePage = () => {
           <LogoutButton />
         </div>
         <UserProfile />
+        <Footer />
       </div>
     </div>
   );

@@ -3,14 +3,8 @@ import { approveQuiz, fetchPendingQuizzes, rejectQuiz } from "../api/quizApi";
 import { io } from "socket.io-client";
 import ConfirmationDialog from "./ConfirmationDialog";
 
-const statusBadge = (status) => {
-  const base =
-    "px-3 py-1 rounded-full text-xs font-bold border-2 border-[#353a7c] shadow-[3px_3px_#353a7c]";
-  if (status === "PENDING") return `${base} bg-[#f7f0c5] text-[#6a5a00]`;
-  if (status === "APPROVED") return `${base} bg-[#c7f7d0] text-[#156c2f]`;
-  if (status === "REJECTED") return `${base} bg-[#ffd0d0] text-[#8b1d1d]`;
-  return `${base} bg-white text-[#353a7c]`;
-};
+const statusBadge = () =>
+  "px-4 py-2 rounded-full text-lg font-extrabold border-2 border-[#353a7c] shadow-[3px_3px_#353a7c] bg-[linear-gradient(45deg,#353a7c,#2872CB)] text-white";
 
 export default function PendingQuizzes() {
   const [pending, setPending] = useState([]);
@@ -76,10 +70,10 @@ export default function PendingQuizzes() {
 
   return (
     <div className="mb-8">
-      <div className="border-3 bg-[#2872CB] border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-5">
+      <div className="border-3 bg-[linear-gradient(45deg,#efad21,#ffd60f)] border-[#353a7c] rounded-xl shadow-[5px_5px_#353a7c] p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white">Pending Quizzes</h2>
-          <span className={statusBadge("PENDING")}>{pending.length}</span>
+          <h2 className="text-2xl font-bold text-[#353a7c]">Pending Quizzes</h2>
+          <span className={statusBadge()}>{pending.length}</span>
         </div>
 
         {error && (
