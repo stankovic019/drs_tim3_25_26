@@ -3,6 +3,7 @@ server/env/
 server/.venv/
 .venv/
 env/
+pyvenv.cfg
 
 # Secrets
 .env
@@ -12,3 +13,4 @@ __pycache__/
 *.pyc
 
 server/uploads
+package-lock.json
