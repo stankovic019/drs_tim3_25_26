@@ -17,13 +17,13 @@ export default function ConfirmationDialog({
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-6 py-2 border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] cursor-pointer transition-all duration-300 hover:shadow-[6px_6px_#353a7c] hover:translate-y-0.5"
+            className="relative overflow-hidden px-6 py-2 border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#1a7f37] cursor-pointer transition-all duration-300 hover:text-[#e8e8e8] hover:shadow-[6px_6px_#1a7f37] hover:border-[#fff] z-[1] before:content-[''] before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:bg-[#1a7f37] before:z-[-1] before:transition-all before:duration-300 hover:before:w-full"
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            className="relative overflow-hidden px-6 py-2 border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#666] cursor-pointer transition-all duration-300 hover:text-[#e8e8e8] hover:shadow-[6px_6px_#9b0101] hover:border-[#fff] z-[1] before:content-[''] before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:bg-[#c80404] before:z-[-1] before:transition-all before:duration-300 hover:before:w-full"
+            className="relative overflow-hidden px-6 py-2 border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#9b0101] cursor-pointer transition-all duration-300 hover:text-[#e8e8e8] hover:shadow-[6px_6px_#9b0101] hover:border-[#fff] z-[1] before:content-[''] before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:bg-[#c80404] before:z-[-1] before:transition-all before:duration-300 hover:before:w-full"
           >
             {confirmText}
           </button>

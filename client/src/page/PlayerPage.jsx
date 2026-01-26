@@ -1,6 +1,7 @@
 import React from "react";
 import LogoutButton from "../components/LogoutButton";
 import ProfileButton from "../components/ProfileButton";
+import PlayerQuizPlay from "../components/PlayerQuizPlay";
 
 const PlayerPage = () => {
   return (
@@ -22,9 +23,7 @@ const PlayerPage = () => {
             <LogoutButton />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <p className="text-gray-600">Welcome to the Player Page</p>
-        </div>
+        <PlayerQuizPlay />
       </div>
     </div>
   );

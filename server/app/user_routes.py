@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.extensions import db
 from app.models import User
+from app.dto import UserDTO
 
 user_bp = Blueprint("user", __name__, url_prefix="/api/users")
 
@@ -22,20 +23,7 @@ def get_my_user(user_id):
     if not user:
         return jsonify({"message": "User not found"}), 404
 
-    return jsonify({
-        "id": user.id,
-        "firstName": user.first_name,
-        "lastName": user.last_name,
-        "email": user.email,
-        "role": user.role,
-        "birthDate": user.birth_date.isoformat() if user.birth_date else None,
-        "gender": user.gender,
-        "country": user.country,
-        "street": user.street,
-        "streetNumber": user.street_number,
-        "profileImage": user.profile_image,
-        "createdAt": user.created_at.isoformat() if user.created_at else None
-    }), 200
+    return jsonify(UserDTO.from_model(user).to_dict()), 200
 
 
 # ---------------- UPDATE MY USER DATA ----------------

@@ -6,6 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from app.extensions import db
 from app.models import User, TokenBlocklist
+from app.dto import UserDTO
 from app.mail_service import send_role_changed_email
 
 def require_role(*allowed_roles):
@@ -143,17 +144,7 @@ def list_users():
         return jsonify({"message": "Forbidden"}), 403
 
     users = User.query.order_by(User.id.asc()).all()
-    return jsonify([
-        {
-            "id": u.id,
-            "firstName": u.first_name,
-            "lastName": u.last_name,
-            "email": u.email,
-            "role": u.role,
-            "createdAt": u.created_at.isoformat() if u.created_at else None
-        }
-        for u in users
-    ]), 200
+    return jsonify([UserDTO.from_model(u).to_dict() for u in users]), 200
 
 # ---------------- ADMIN POSTAVI USER ROLE ----------------
 @auth_bp.route("/users/<int:user_id>/role", methods=["PATCH"])

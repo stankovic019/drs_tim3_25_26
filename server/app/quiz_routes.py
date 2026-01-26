@@ -1,8 +1,11 @@
 from flask import Blueprint, request, jsonify
+from multiprocessing import Process
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
-from app.extensions import db
+from app.extensions import db, socketio
 from app.models import Quiz, Question, AnswerOption, QuizAttempt, User
+from app.dto import QuizDTO, QuizAttemptDTO
+from app.quiz_processing import process_quiz_submission
 
 from datetime import datetime
 
@@ -91,6 +94,19 @@ def create_quiz():
             return jsonify({"message": "Each question must have at least 1 correct answer"}), 400
 
     db.session.commit()
+    author = User.query.get(quiz.author_id)
+    author_name = None
+    if author:
+        author_name = f"{author.first_name} {author.last_name}".strip()
+    socketio.emit("quiz_created", {
+        "id": quiz.id,
+        "title": quiz.title,
+        "durationSeconds": quiz.duration_seconds,
+        "status": quiz.status,
+        "authorId": quiz.author_id,
+        "authorName": author_name,
+        "createdAt": quiz.created_at.isoformat() if quiz.created_at else None
+    }, to="admins")
     return jsonify({"message": "Quiz created", "id": quiz.id, "status": quiz.status}), 201
 
 # ---------------- KVIZ ZA ODOBRAVANJE LISTA ----------------
@@ -102,17 +118,32 @@ def list_pending_quizzes():
 
     quizzes = Quiz.query.filter_by(status="PENDING").order_by(Quiz.id.asc()).all()
 
-    return jsonify([
-        {
-            "id": q.id,
-            "title": q.title,
-            "durationSeconds": q.duration_seconds,
-            "status": q.status,
-            "authorId": q.author_id,
-            "createdAt": q.created_at.isoformat() if q.created_at else None
-        }
-        for q in quizzes
-    ]), 200
+    result = []
+    for q in quizzes:
+        author = User.query.get(q.author_id)
+        author_name = None
+        if author:
+            author_name = f"{author.first_name} {author.last_name}".strip()
+        result.append(QuizDTO.from_model(q, author_name=author_name).to_dict())
+
+    return jsonify(result), 200
+
+# ---------------- SVI KVIZOVI (ADMIN) ----------------
+@quiz_bp.route("/admin/all", methods=["GET"])
+@jwt_required()
+def list_all_quizzes_admin():
+    if not require_role("ADMIN"):
+        return jsonify({"message": "Forbidden"}), 403
+
+    quizzes = Quiz.query.order_by(Quiz.id.asc()).all()
+    result = []
+    for q in quizzes:
+        author = User.query.get(q.author_id)
+        author_name = None
+        if author:
+            author_name = f"{author.first_name} {author.last_name}".strip()
+        result.append(QuizDTO.from_model(q, author_name=author_name).to_dict())
+    return jsonify(result), 200
 
 # ---------------- ODOBRI KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>/approve", methods=["PATCH"])
@@ -131,6 +162,11 @@ def approve_quiz(quiz_id):
     quiz.status = "APPROVED"
     quiz.rejection_reason = None
     db.session.commit()
+    socketio.emit("quiz_reviewed", {
+        "id": quiz.id,
+        "status": quiz.status,
+        "reason": quiz.rejection_reason
+    }, to=f"user:{quiz.author_id}")
 
     return jsonify({"message": "Quiz approved", "id": quiz.id, "status": quiz.status}), 200
 
@@ -156,6 +192,11 @@ def reject_quiz(quiz_id):
     quiz.status = "REJECTED"
     quiz.rejection_reason = reason
     db.session.commit()
+    socketio.emit("quiz_reviewed", {
+        "id": quiz.id,
+        "status": quiz.status,
+        "reason": quiz.rejection_reason
+    }, to=f"user:{quiz.author_id}")
 
     return jsonify({
         "message": "Quiz rejected",
@@ -170,14 +211,7 @@ def reject_quiz(quiz_id):
 def list_approved_quizzes():
     quizzes = Quiz.query.filter_by(status="APPROVED").order_by(Quiz.id.asc()).all()
 
-    return jsonify([
-        {
-            "id": q.id,
-            "title": q.title,
-            "durationSeconds": q.duration_seconds
-        }
-        for q in quizzes
-    ]), 200
+    return jsonify([QuizDTO.from_model(q).to_dict() for q in quizzes]), 200
 
 # ---------------- DETALJI KVIZA ----------------
 @quiz_bp.route("/<int:quiz_id>", methods=["GET"])
@@ -191,27 +225,8 @@ def get_quiz_details(quiz_id):
     if role == "PLAYER" and quiz.status != "APPROVED":
         return jsonify({"message": "Forbidden"}), 403
 
-    return jsonify({
-        "id": quiz.id,
-        "title": quiz.title,
-        "durationSeconds": quiz.duration_seconds,
-        "status": quiz.status,
-        "questions": [
-            {
-                "id": q.id,
-                "text": q.text,
-                "points": q.points,
-                "answers": [
-                    {
-                        "id": a.id,
-                        "text": a.text
-                    }
-                    for a in q.answers
-                ]
-            }
-            for q in quiz.questions
-        ]
-    }), 200
+    dto = QuizDTO.from_model(quiz, include_questions=True)
+    return jsonify(dto.to_dict()), 200
 
 # ---------------- POKRENI KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>/start", methods=["POST"])
@@ -275,15 +290,23 @@ def submit_quiz_attempt(quiz_id):
         return jsonify({"message": "You must start the quiz first"}), 409
 
     if attempt.finished_at is not None:
+        if attempt.score is None:
+            return jsonify({"message": "Processing"}), 202
         return jsonify({"message": "Already submitted", "score": attempt.score}), 409
 
     now = datetime.utcnow()
     elapsed_seconds = (now - attempt.started_at).total_seconds()
     if quiz.duration_seconds is not None and elapsed_seconds > quiz.duration_seconds:
         attempt.finished_at = now
-        attempt.score = 0
+        attempt.score = None
         db.session.commit()
-        return jsonify({"message": "Time expired", "score": 0}), 403
+        proc = Process(
+            target=process_quiz_submission,
+            args=(quiz.id, attempt.id, [], True),
+            daemon=True
+        )
+        proc.start()
+        return jsonify({"message": "Time expired, processing result"}), 202
 
     data = request.get_json() or {}
     answers = data.get("answers") or []
@@ -313,7 +336,6 @@ def submit_quiz_attempt(quiz_id):
 
         submitted[qid] = set(answer_ids)
 
-    score = 0
     for q in quiz.questions:
         chosen = submitted.get(q.id)
         if not chosen:
@@ -323,21 +345,22 @@ def submit_quiz_attempt(quiz_id):
         if not chosen.issubset(valid_ids):
             return jsonify({"message": f"Invalid answerIds for question {q.id}"}), 400
 
-        correct_ids = {a.id for a in q.answers if a.is_correct}
-
-        if chosen == correct_ids:
-            score += (q.points or 0)
-
-    attempt.score = score
     attempt.finished_at = now
+    attempt.score = None
     db.session.commit()
+
+    proc = Process(
+        target=process_quiz_submission,
+        args=(quiz.id, attempt.id, answers, False),
+        daemon=True
+    )
+    proc.start()
 
     return jsonify({
         "attemptId": attempt.id,
         "quizId": quiz.id,
-        "score": score,
-        "finishedAt": attempt.finished_at.isoformat()
-    }), 200
+        "status": "PROCESSING"
+    }), 202
 
 # ---------------- LISTA POBJEDNIKA ----------------
 @quiz_bp.route("/<int:quiz_id>/leaderboard", methods=["GET"])
@@ -350,7 +373,7 @@ def leaderboard(quiz_id):
     attempts = (
         QuizAttempt.query
         .filter_by(quiz_id=quiz_id)
-        .filter(QuizAttempt.finished_at.isnot(None))
+        .filter(QuizAttempt.score.isnot(None))
         .order_by(QuizAttempt.score.desc(), QuizAttempt.finished_at.asc())
         .limit(50)
         .all()
@@ -364,14 +387,35 @@ def leaderboard(quiz_id):
 
         u = User.query.get(a.player_id)
 
-        result.append({
-            "playerId": a.player_id,
-            "email": u.email if u else None,
-            "score": a.score,
-            "durationSeconds": duration,
-            "finishedAt": a.finished_at.isoformat() if a.finished_at else None
-        })
+        dto = QuizAttemptDTO(
+            player_id=a.player_id,
+            name=f"{u.first_name} {u.last_name}".strip() if u else None,
+            score=a.score,
+            duration_seconds=duration,
+            finished_at=a.finished_at.isoformat() if a.finished_at else None,
+        )
+        result.append(dto.to_dict())
     return jsonify(result), 200
+
+# ---------------- OBRISI KVIZ ----------------
+@quiz_bp.route("/<int:quiz_id>", methods=["DELETE"])
+@jwt_required()
+def delete_quiz(quiz_id):
+    if not require_role("MODERATOR", "ADMIN"):
+        return jsonify({"message": "Forbidden"}), 403
+
+    user_id = int(get_jwt_identity())
+
+    quiz = Quiz.query.get(quiz_id)
+    if not quiz:
+        return jsonify({"message": "Quiz not found"}), 404
+
+    if not require_role("ADMIN") and quiz.author_id != user_id:
+        return jsonify({"message": "Forbidden"}), 403
+
+    db.session.delete(quiz)
+    db.session.commit()
+    return jsonify({"message": "Quiz deleted", "id": quiz_id}), 200
 
 # ---------------- REZULTAT KVIZA ----------------
 @quiz_bp.route("/<int:quiz_id>/result/me", methods=["GET"])
@@ -397,8 +441,14 @@ def my_result(quiz_id):
             elapsed = (now - attempt.started_at).total_seconds()
             if elapsed > quiz.duration_seconds:
                 attempt.finished_at = now
-                attempt.score = 0
+                attempt.score = None
                 db.session.commit()
+                proc = Process(
+                    target=process_quiz_submission,
+                    args=(quiz.id, attempt.id, [], True),
+                    daemon=True
+                )
+                proc.start()
             else:
                 return jsonify({"message": "Not submitted yet"}), 409
         else:
@@ -407,6 +457,9 @@ def my_result(quiz_id):
     duration = None
     if attempt.started_at and attempt.finished_at:
         duration = int((attempt.finished_at - attempt.started_at).total_seconds())
+
+    if attempt.score is None:
+        return jsonify({"message": "Processing"}), 202
 
     return jsonify({
         "quizId": quiz_id,
@@ -432,17 +485,7 @@ def my_quizzes():
         .all()
     )
 
-    return jsonify([
-        {
-            "id": q.id,
-            "title": q.title,
-            "durationSeconds": q.duration_seconds,
-            "status": q.status,
-            "rejectionReason": q.rejection_reason,
-            "createdAt": q.created_at.isoformat() if q.created_at else None
-        }
-        for q in quizzes
-    ]), 200
+    return jsonify([QuizDTO.from_model(q).to_dict() for q in quizzes]), 200
 
 # ---------------- ODBIJENI KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>", methods=["PUT"])
