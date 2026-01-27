@@ -7,6 +7,8 @@ import {
   startQuizAttempt,
   submitQuizAttempt,
 } from "../api/quizApi";
+import QuizQuestion from "../components/QuizQuestion";
+
 import { io } from "socket.io-client";
 
 const countBadge = (text) =>
@@ -268,11 +270,11 @@ export default function PlayerQuizPlay() {
                   className="h-full bg-[linear-gradient(45deg,#353a7c,#2872CB)] transition-[width] duration-500"
                   style={{
                     width: `${totalDuration > 0
-                        ? Math.max(
-                          0,
-                          Math.min(100, (timeLeft / totalDuration) * 100)
-                        )
-                        : 0
+                      ? Math.max(
+                        0,
+                        Math.min(100, (timeLeft / totalDuration) * 100)
+                      )
+                      : 0
                       }%`,
                   }}
                 />
@@ -335,55 +337,21 @@ export default function PlayerQuizPlay() {
             <div className="space-y-4">
               {activeQuiz.questions.length > 0 && (() => {
                 const q = activeQuiz.questions[currentQuestionIndex];
+
                 return (
-                  <div
+                  <QuizQuestion
                     key={q.id}
-                    className="border-2 border-[#353a7c] rounded-lg bg-white shadow-[3px_3px_#353a7c] p-4"
-                  >
-                    <p className="text-[#353a7c] font-bold mb-2">
-                      {currentQuestionIndex + 1}. {q.text}
-                    </p>
-                    {typeof q.correctCount === "number" && (
-                      <p className="text-xs font-semibold text-[#666] mb-2">
-                        Number of answers: {q.correctCount}
-                      </p>
-                    )}
-                    <div className="space-y-2">
-                      {q.answers.map((a) => (
-                        <label
-                          key={a.id}
-                          className="flex items-center gap-2 text-[#666] font-semibold cursor-pointer"
-                        >
-                          <span className="relative inline-flex items-center justify-center">
-                            <input
-                              type="checkbox"
-                              checked={(answers[q.id] || []).includes(a.id)}
-                              onChange={(e) =>
-                                toggleAnswer(q.id, a.id, e.target.checked)
-                              }
-                              className="peer sr-only"
-                            />
-                            <span className="w-4 h-4 rounded-[4px] border-2 border-[#353a7c] bg-white shadow-[2px_2px_#353a7c] transition-colors duration-200 peer-checked:bg-[#353a7c] peer-checked:border-[#353a7c]" />
-                            <svg
-                              viewBox="0 0 24 24"
-                              className="pointer-events-none absolute w-3 h-3 text-white opacity-0 transition-opacity duration-200 peer-checked:opacity-100"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M5 12l4 4 10-10" />
-                            </svg>
-                          </span>
-                          {a.text}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+                    question={q}
+                    index={currentQuestionIndex}
+                    total={activeQuiz.questions.length}
+                    selectedAnswers={answers[q.id] || []}
+                    onToggle={toggleAnswer}
+                    onAutoNext={handleNextQuestion}
+                  />
                 );
               })()}
             </div>
+
             <div className="flex justify-end">
               {activeQuiz.questions.length > 0 &&
                 currentQuestionIndex < activeQuiz.questions.length - 1 ? (

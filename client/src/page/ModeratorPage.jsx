@@ -24,11 +24,11 @@ const ModeratorPage = () => {
         backgroundAttachment: "fixed",
       }}
     >
-      <img
+      {/* <img
         src="/moderator-dashboard.png"
         alt="Moderator Dashboard"
         className="fixed -top-6 -left-12 h-64 w-auto object-contain z-40 dashboard-logo-pulse"
-      />
+      /> */}
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <button
