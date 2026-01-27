@@ -267,14 +267,13 @@ export default function PlayerQuizPlay() {
                 <div
                   className="h-full bg-[linear-gradient(45deg,#353a7c,#2872CB)] transition-[width] duration-500"
                   style={{
-                    width: `${
-                      totalDuration > 0
+                    width: `${totalDuration > 0
                         ? Math.max(
-                            0,
-                            Math.min(100, (timeLeft / totalDuration) * 100)
-                          )
+                          0,
+                          Math.min(100, (timeLeft / totalDuration) * 100)
+                        )
                         : 0
-                    }%`,
+                      }%`,
                   }}
                 />
               </div>
@@ -346,7 +345,7 @@ export default function PlayerQuizPlay() {
                     </p>
                     {typeof q.correctCount === "number" && (
                       <p className="text-xs font-semibold text-[#666] mb-2">
-                        Tacnih odgovora: {q.correctCount}
+                        Number of answers: {q.correctCount}
                       </p>
                     )}
                     <div className="space-y-2">
@@ -387,7 +386,7 @@ export default function PlayerQuizPlay() {
             </div>
             <div className="flex justify-end">
               {activeQuiz.questions.length > 0 &&
-              currentQuestionIndex < activeQuiz.questions.length - 1 ? (
+                currentQuestionIndex < activeQuiz.questions.length - 1 ? (
                 <button
                   onClick={handleNextQuestion}
                   disabled={(answers[activeQuiz.questions[currentQuestionIndex].id] || []).length === 0}
