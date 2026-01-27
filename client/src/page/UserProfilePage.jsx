@@ -8,7 +8,7 @@ const UserProfilePage = () => {
 
   return (
     <div
-      className="min-h-screen bg-gray-100 p-8 pb-32"
+      className="min-h-screen bg-gray-100 pt-8 flex flex-col"
       style={{
         backgroundImage: "url(/background.png)",
         backgroundSize: "cover",
@@ -17,7 +17,7 @@ const UserProfilePage = () => {
         backgroundAttachment: "fixed",
       }}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-8">
           <div className="flex flex-col gap-4">
             <h1 className="text-3xl font-bold text-white">User profile</h1>
@@ -33,8 +33,10 @@ const UserProfilePage = () => {
           <LogoutButton />
         </div>
         <UserProfile />
-        <Footer />
+        <div className="mt-auto">
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
