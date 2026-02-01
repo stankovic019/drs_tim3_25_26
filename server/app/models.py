@@ -1,8 +1,13 @@
 from app.extensions import db
 from datetime import datetime
 
+# ============================================
+# USER_DATA modeli
+# ============================================
+
 class User(db.Model):
     __tablename__ = "users"
+    __bind_key__ = 'user_data'  # Vezuje model za USER_DATA bazu
 
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(100), nullable=False)
@@ -21,18 +26,23 @@ class User(db.Model):
     locked_until = db.Column(db.DateTime, nullable=True)
 
 
-
 class LoginAttempt(db.Model):
     __tablename__ = "login_attempts"
+    __bind_key__ = 'user_data'  # Vezuje model za USER_DATA bazu
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True)
+    user_id = db.Column(db.Integer, unique=True)  # Removed ForeignKey jer je u drugoj bazi
     failed_attempts = db.Column(db.Integer, default=0)
     blocked_until = db.Column(db.DateTime)
 
 
+# ============================================
+# QUIZZES_DATA modeli
+# ============================================
+
 class Quiz(db.Model):
     __tablename__ = "quizzes"
+    __bind_key__ = 'quiz_data'  # Vezuje model za QUIZZES_DATA bazu
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -41,7 +51,7 @@ class Quiz(db.Model):
     status = db.Column(db.String(20), nullable=False, default="PENDING")
     rejection_reason = db.Column(db.Text, nullable=True)
 
-    author_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    author_id = db.Column(db.Integer, nullable=False)  # Removed ForeignKey jer User je u drugoj bazi
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     questions = db.relationship(
@@ -54,6 +64,7 @@ class Quiz(db.Model):
 
 class Question(db.Model):
     __tablename__ = "questions"
+    __bind_key__ = 'quiz_data'  # Vezuje model za QUIZZES_DATA bazu
 
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"), nullable=False)
@@ -71,6 +82,7 @@ class Question(db.Model):
 
 class AnswerOption(db.Model):
     __tablename__ = "answer_options"
+    __bind_key__ = 'quiz_data'  # Vezuje model za QUIZZES_DATA bazu
 
     id = db.Column(db.Integer, primary_key=True)
     question_id = db.Column(db.Integer, db.ForeignKey("questions.id"), nullable=False)
@@ -78,25 +90,30 @@ class AnswerOption(db.Model):
     text = db.Column(db.Text, nullable=False)
     is_correct = db.Column(db.Boolean, nullable=False, default=False)
 
+
 class QuizAttempt(db.Model):
     __tablename__ = "quiz_attempts"
+    __bind_key__ = 'quiz_data'  # Vezuje model za QUIZZES_DATA bazu
 
     id = db.Column(db.Integer, primary_key=True)
 
     quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"), nullable=False)
-    player_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    player_id = db.Column(db.Integer, nullable=False)  # Removed ForeignKey jer User je u drugoj bazi
 
     started_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     finished_at = db.Column(db.DateTime, nullable=True)
 
     score = db.Column(db.Integer, nullable=True)
 
+    # Note: UniqueConstraint mora ostati, ali bez ForeignKey na player_id
     __table_args__ = (
         db.UniqueConstraint("quiz_id", "player_id", name="uq_attempt_quiz_player"),
     )
 
+
 class TokenBlocklist(db.Model):
     __tablename__ = "token_blocklist"
+    __bind_key__ = 'quiz_data'  # Vezuje model za QUIZZES_DATA bazu
 
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), nullable=False, unique=True, index=True)

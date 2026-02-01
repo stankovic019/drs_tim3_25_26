@@ -174,8 +174,8 @@ echo MySQL is running on:
 echo   Host: localhost
 echo   Port: 5002
 echo   User: %MYSQL_USER%
-echo   Password: %MYSQL_PASSWORD%
+echo   Password: HIDDEN
 echo.
-echo To connect: docker exec -it DRS_quiz mysql -u %MYSQL_USER% -p%MYSQL_PASSWORD%
+echo To connect: docker exec -it DRS_quiz mysql -u %MYSQL_USER% -pHIDDEN
 echo.
 pause
