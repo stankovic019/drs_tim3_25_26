@@ -1,0 +1,40 @@
+CREATE DATABASE IF NOT EXISTS QUIZZES_DATA;
+
+CREATE TABLE IF NOT EXISTS QUIZZES_DATA.quizzes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    duration_seconds INT NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    rejection_reason TEXT,
+    author_id INT NOT NULL,
+    created_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS QUIZZES_DATA.quiz_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quiz_id INT NOT NULL,
+    player_id INT NOT NULL,
+    started_at DATETIME NOT NULL,
+    finished_at DATETIME,
+    score INT
+);
+
+CREATE TABLE IF NOT EXISTS QUIZZES_DATA.token_blocklist (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    jti VARCHAR(36) NOT NULL UNIQUE,
+    created_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS QUIZZES_DATA.questions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quiz_id INT NOT NULL,
+    text TEXT NOT NULL,
+    points INT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS QUIZZES_DATA.answer_options (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_id INT NOT NULL,
+    text TEXT NOT NULL,
+    is_correct TINYINT(1) NOT NULL
+);
