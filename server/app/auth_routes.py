@@ -7,7 +7,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.extensions import db
 from app.models import User, TokenBlocklist, Quiz, QuizAttempt
 from app.dto import UserDTO
-from app.mail_service import send_role_changed_email
+from app.mail_service import send_role_changed_email_async
 
 def require_role(*allowed_roles):
     claims = get_jwt()
@@ -173,7 +173,7 @@ def set_user_role(user_id):
 
     if old_role == "PLAYER" and new_role == "MODERATOR":
         try: 
-            send_role_changed_email(user.email, new_role)
+            send_role_changed_email_async(user.email, user.role)
 
         except Exception as e:
             print(f"Failed to send role changed email: {e}")
@@ -223,39 +223,3 @@ def admin_get_all_users():
 
     return jsonify(users_list), 200
 
-
-# ---------------- ADMIN: OBRISI KORISNIKA ----------------
-@auth_bp.route("/users/<int:user_id>", methods=["DELETE"])
-@jwt_required()
-def delete_user(user_id):
-    claims = get_jwt()
-
-    # Samo ADMIN može da briše korisnike
-    if claims.get("role") != "ADMIN":
-        return jsonify({"message": "Forbidden"}), 403
-
-    # Opcionalno: zabrani da admin obriše samog sebe
-    current_user_id = int(get_jwt_identity())
-    if current_user_id == user_id:
-        return jsonify({"message": "You cannot delete your own account"}), 400
-
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
-    # Remove related quiz attempts (as player)
-    QuizAttempt.query.filter_by(player_id=user_id).delete(synchronize_session=False)
-
-    # Remove quizzes authored by this user (and related attempts)
-    authored_quizzes = Quiz.query.filter_by(author_id=user_id).all()
-    for quiz in authored_quizzes:
-        QuizAttempt.query.filter_by(quiz_id=quiz.id).delete(synchronize_session=False)
-        db.session.delete(quiz)
-
-    db.session.delete(user)
-    db.session.commit()
-
-    return jsonify({
-        "message": "User deleted successfully",
-        "id": user_id
-    }), 200

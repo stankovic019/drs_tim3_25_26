@@ -1,0 +1,4 @@
+services:
+  db:
+    ports:
+      - "5002:3306"

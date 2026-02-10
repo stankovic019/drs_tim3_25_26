@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { deleteQuiz, fetchAllQuizzes } from "../api/quizApi";
 import ConfirmationDialog from "./ConfirmationDialog";
+import SendQuizReportButton from "./SendQuizReportButton";
 
 const statusBadge = () =>
   "px-4 py-2 rounded-full text-lg font-extrabold border-2 border-[#353a7c] shadow-[3px_3px_#353a7c] bg-[linear-gradient(45deg,#353a7c,#2872CB)] text-white";
@@ -93,6 +94,7 @@ export default function ApprovedQuizzes() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <SendQuizReportButton quizId={quiz.id} />
                     <button
                       onClick={() => requestDelete(quiz.id)}
                       className="relative overflow-hidden px-5 h-[38px] border-2 border-[#353a7c] rounded-[5px] bg-[#fff] shadow-[4px_4px_#353a7c] font-semibold text-[#9b0101] cursor-pointer transition-all duration-300 hover:text-[#e8e8e8] hover:shadow-[6px_6px_#9b0101] hover:border-[#fff] z-[1] before:content-[''] before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:bg-[#c80404] before:z-[-1] before:transition-all before:duration-300 hover:before:w-full"

@@ -6,6 +6,7 @@ from app.extensions import db, socketio
 from app.models import Quiz, Question, AnswerOption, QuizAttempt, User
 from app.dto import QuizDTO, QuizAttemptDTO
 from app.quiz_processing import process_quiz_submission
+from app.mail_service import send_quiz_report_email_async
 
 from datetime import datetime, timedelta
 
@@ -597,3 +598,60 @@ def update_rejected_quiz(quiz_id):
 
     db.session.commit()
     return jsonify({"message": "Quiz updated and resubmitted", "id": quiz.id, "status": quiz.status}), 200
+
+
+#---------------- POSALJI IZVJESTAJ KVIZA EMAILOM ----------------
+@quiz_bp.route("/<int:quiz_id>/report/email", methods=["POST"])
+@jwt_required()
+def email_quiz_report(quiz_id):
+    if not require_role("ADMIN"):
+        return jsonify({"message": "Forbidden"}), 403
+
+    quiz = Quiz.query.get(quiz_id)
+    if not quiz:
+        return jsonify({"message": "Quiz not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    requested_email = (data.get("email") or "").strip()
+
+    admin_user = User.query.get(int(get_jwt_identity()))
+    target_email = requested_email or (admin_user.email if admin_user else "")
+
+    if not target_email:
+        return jsonify({"message": "Target email is required"}), 400
+
+    attempts = (
+        QuizAttempt.query
+        .filter_by(quiz_id=quiz_id)
+        .order_by(QuizAttempt.finished_at.desc())
+        .all()
+    )
+
+    attempt_rows = []
+    for attempt in attempts:
+        player = User.query.get(attempt.player_id)
+        full_name = (
+            f"{player.first_name} {player.last_name}".strip()
+            if player else f"Player {attempt.player_id}"
+        )
+
+        duration_seconds = None
+        if attempt.started_at and attempt.finished_at:
+            duration_seconds = int((attempt.finished_at - attempt.started_at).total_seconds())
+
+        attempt_rows.append({
+            "player_id": attempt.player_id,
+            "name": full_name,
+            "score": attempt.score,
+            "finished_at": attempt.finished_at,
+            "duration_seconds": duration_seconds,
+        })
+
+    send_quiz_report_email_async(
+        to_email=target_email,
+        quiz_id=quiz.id,
+        quiz_title=quiz.title,
+        attempt_rows=attempt_rows,
+    )
+
+    return jsonify({"message": "Report generation started. Email will be sent shortly."}), 202

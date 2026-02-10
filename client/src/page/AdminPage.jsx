@@ -5,6 +5,7 @@ import Dashboard from "../components/Dashboard";
 import PendingQuizzes from "../components/PendingQuizzes";
 import ApprovedQuizzes from "../components/ApprovedQuizzes";
 import Footer from "../components/Footer";
+import SendQuizReportButton from "../components/SendQuizReportButton";
 import { GiHamburgerMenu } from "react-icons/gi";
 
 const AdminPage = () => {
