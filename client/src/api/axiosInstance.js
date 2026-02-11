@@ -3,7 +3,7 @@ import axios from "axios";
 //Render trigger rebuild v2
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://flask-backend-drs.onrender.com/api",
 });
 
 axiosInstance.interceptors.request.use((config) => {
