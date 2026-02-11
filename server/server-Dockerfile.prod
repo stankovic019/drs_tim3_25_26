@@ -1,0 +1,52 @@
+# ====================================
+# Stage 1: Build Stage
+# ====================================
+FROM python:3.11-slim AS build
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn
+
+# ====================================
+# Stage 2: Production Stage
+# ====================================
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install runtime dependencies for MySQL
+RUN apt-get update && apt-get install -y \
+    default-libmysqlclient-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from build stage
+COPY --from=build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=build /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY . .
+
+# Create uploads directory if it doesn't exist
+RUN mkdir -p uploads
+
+# Expose port (Render uses PORT environment variable)
+EXPOSE 5000
+
+# Use Gunicorn as WSGI server (production-ready)
+# Workers: 2-4 workers recommended for small apps
+# Timeout: 120 seconds for long-running requests
+# Bind to 0.0.0.0:$PORT (Render provides PORT env var)
+CMD gunicorn --workers=2 --threads=2 --timeout=120 --bind=0.0.0.0:${PORT:-5000} "start:app"
