@@ -7,6 +7,7 @@ from app.models import Quiz, Question, AnswerOption, QuizAttempt, User
 from app.dto import QuizDTO, QuizAttemptDTO
 from app.quiz_processing import process_quiz_submission
 from app.mail_service import send_quiz_report_email_async
+from app.cache_store import cache, cache_key, invalidate_prefix
 
 from datetime import datetime, timedelta
 
@@ -95,6 +96,8 @@ def create_quiz():
             return jsonify({"message": "Each question must have at least 1 correct answer"}), 400
 
     db.session.commit()
+    invalidate_prefix("quizzes:pending")
+    invalidate_prefix("quizzes:approved")
     author = User.query.get(quiz.author_id)
     author_name = None
     if author:
@@ -117,6 +120,12 @@ def list_pending_quizzes():
     if not require_role("ADMIN"):
         return jsonify({"message": "Forbidden"}), 403
 
+    key = cache_key("quizzes", "pending")
+    cached = cache.get(key)
+    if cached is not None:
+        print("CACHE HIT:", key)
+        return jsonify(cached), 200
+
     quizzes = Quiz.query.filter_by(status="PENDING").order_by(Quiz.id.asc()).all()
 
     result = []
@@ -127,6 +136,7 @@ def list_pending_quizzes():
             author_name = f"{author.first_name} {author.last_name}".strip()
         result.append(QuizDTO.from_model(q, author_name=author_name).to_dict())
 
+    cache[key] = result
     return jsonify(result), 200
 
 # ---------------- SVI KVIZOVI (ADMIN) ----------------
@@ -163,6 +173,9 @@ def approve_quiz(quiz_id):
     quiz.status = "APPROVED"
     quiz.rejection_reason = None
     db.session.commit()
+    invalidate_prefix("quizzes:pending")
+    invalidate_prefix("quizzes:approved")
+    invalidate_prefix(f"quiz:{quiz_id}:details")
     socketio.emit("quiz_reviewed", {
         "id": quiz.id,
         "status": quiz.status,
@@ -193,6 +206,9 @@ def reject_quiz(quiz_id):
     quiz.status = "REJECTED"
     quiz.rejection_reason = reason
     db.session.commit()
+    invalidate_prefix("quizzes:pending")
+    invalidate_prefix(f"quiz:{quiz_id}:details")
+    invalidate_prefix("quizzes:approved")
     socketio.emit("quiz_reviewed", {
         "id": quiz.id,
         "status": quiz.status,
@@ -210,9 +226,17 @@ def reject_quiz(quiz_id):
 @quiz_bp.route("", methods=["GET"])
 @jwt_required()
 def list_approved_quizzes():
-    quizzes = Quiz.query.filter_by(status="APPROVED").order_by(Quiz.id.asc()).all()
+    key = cache_key("quizzes", "approved")
+    cached = cache.get(key)
+    if cached is not None:
+        print("CACHE HIT:", key)
+        return jsonify(cached), 200
 
-    return jsonify([QuizDTO.from_model(q).to_dict() for q in quizzes]), 200
+    quizzes = Quiz.query.filter_by(status="APPROVED").order_by(Quiz.id.asc()).all()
+    result = [QuizDTO.from_model(q).to_dict() for q in quizzes]
+
+    cache[key] = result
+    return jsonify(result), 200
 
 # ---------------- DETALJI KVIZA ----------------
 @quiz_bp.route("/<int:quiz_id>", methods=["GET"])
@@ -226,12 +250,20 @@ def get_quiz_details(quiz_id):
     if role == "PLAYER" and quiz.status != "APPROVED":
         return jsonify({"message": "Forbidden"}), 403
 
+    key = cache_key("quiz", quiz_id, "details", role)
+    cached = cache.get(key)
+    if cached is not None:
+        print("CACHE HIT:", key)
+        return jsonify(cached), 200
+
     dto = QuizDTO.from_model(
         quiz,
         include_questions=True,
         include_correct_count=role == "PLAYER",
     )
-    return jsonify(dto.to_dict()), 200
+    result = dto.to_dict()
+    cache[key] = result
+    return jsonify(result), 200
 
 # ---------------- POKRENI KVIZ ----------------
 @quiz_bp.route("/<int:quiz_id>/start", methods=["POST"])
@@ -305,6 +337,8 @@ def submit_quiz_attempt(quiz_id):
         attempt.finished_at = now
         attempt.score = None
         db.session.commit()
+        invalidate_prefix(f"quiz:{quiz.id}:leaderboard")
+
         proc = Process(
             target=process_quiz_submission,
             args=(quiz.id, attempt.id, [], True),
@@ -363,6 +397,7 @@ def submit_quiz_attempt(quiz_id):
         attempt.finished_at = now
     attempt.score = None
     db.session.commit()
+    invalidate_prefix(f"quiz:{quiz.id}:leaderboard")
 
     proc = Process(
         target=process_quiz_submission,
@@ -384,6 +419,12 @@ def leaderboard(quiz_id):
     quiz = Quiz.query.get(quiz_id)
     if not quiz or quiz.status != "APPROVED":
         return jsonify({"message": "Quiz not found"}), 404
+
+    key = cache_key("quiz", quiz_id, "leaderboard")
+    cached = cache.get(key)
+    if cached is not None:
+        print("CACHE HIT:", key)
+        return jsonify(cached), 200
 
     attempts = (
         QuizAttempt.query
@@ -410,6 +451,7 @@ def leaderboard(quiz_id):
             finished_at=a.finished_at.isoformat() if a.finished_at else None,
         )
         result.append(dto.to_dict())
+    cache[key] = result
     return jsonify(result), 200
 
 # ---------------- OBRISI KVIZ ----------------
@@ -431,6 +473,11 @@ def delete_quiz(quiz_id):
     QuizAttempt.query.filter_by(quiz_id=quiz_id).delete(synchronize_session=False)
     db.session.delete(quiz)
     db.session.commit()
+    invalidate_prefix("quizzes:pending")
+    invalidate_prefix("quizzes:approved")
+    invalidate_prefix(f"quiz:{quiz_id}:details")
+    invalidate_prefix(f"quiz:{quiz_id}:leaderboard")
+
     return jsonify({"message": "Quiz deleted", "id": quiz_id}), 200
 
 # ---------------- REZULTAT KVIZA ----------------
@@ -459,6 +506,7 @@ def my_result(quiz_id):
                 attempt.finished_at = now
                 attempt.score = None
                 db.session.commit()
+                invalidate_prefix(f"quiz:{quiz.id}:leaderboard")
                 proc = Process(
                     target=process_quiz_submission,
                     args=(quiz.id, attempt.id, [], True),
@@ -597,6 +645,10 @@ def update_rejected_quiz(quiz_id):
     quiz.rejection_reason = None
 
     db.session.commit()
+    invalidate_prefix("quizzes:pending")
+    invalidate_prefix("quizzes:approved")
+    invalidate_prefix(f"quiz:{quiz_id}:details")
+
     return jsonify({"message": "Quiz updated and resubmitted", "id": quiz.id, "status": quiz.status}), 200
 
 
