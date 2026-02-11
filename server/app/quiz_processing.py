@@ -3,7 +3,7 @@ import time
 
 from app.extensions import db, socketio
 from app.models import Quiz, QuizAttempt, User
-from app.mail_service import send_email_async
+from app.mail_service import send_email
 
 
 def _calculate_score(quiz, submitted):
@@ -78,6 +78,6 @@ def process_quiz_submission(quiz_id, attempt_id, submitted_answers, expired=Fals
                 f"Score: {score}\n"
             )
             try:
-                send_email_async(player.email, "Quiz Result", body)
+                send_email(player.email, "Quiz Result", body)
             except Exception:
                 pass

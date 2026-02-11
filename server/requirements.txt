@@ -1,2 +1,10 @@
-flask-socketio
 eventlet
+flask
+flask-cors
+flask-jwt-extended
+flask-socketio
+flask-sqlalchemy
+mysql-connector-python
+python-dotenv
+reportlab
+sqlalchemy
