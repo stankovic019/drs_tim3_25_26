@@ -377,7 +377,7 @@ def submit_quiz_attempt(quiz_id):
         "status": "PROCESSING"
     }), 202
 
-# ---------------- LISTA POBJEDNIKA ----------------
+# ---------------- LISTA POBEDNIKA ----------------
 @quiz_bp.route("/<int:quiz_id>/leaderboard", methods=["GET"])
 @jwt_required()
 def leaderboard(quiz_id):
@@ -600,7 +600,7 @@ def update_rejected_quiz(quiz_id):
     return jsonify({"message": "Quiz updated and resubmitted", "id": quiz.id, "status": quiz.status}), 200
 
 
-#---------------- POSALJI IZVJESTAJ KVIZA EMAILOM ----------------
+#---------------- POSALJI IZVESTAJ KVIZA EMAILOM ----------------
 @quiz_bp.route("/<int:quiz_id>/report/email", methods=["POST"])
 @jwt_required()
 def email_quiz_report(quiz_id):

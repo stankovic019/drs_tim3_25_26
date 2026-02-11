@@ -12,7 +12,7 @@ export default function Footer() {
             <img src={logo} alt="Logo" className="w-[95px]" />
           </div>
           <div className="text-[13px] font-semibold text-white sm:w-1/3 sm:text-right">
-            Maja Bogićević, Nikola Knežević, Dimitrije Stanković, Vojin
+            Maja Bogičević, Nikola Knežević, Dimitrije Stanković, Vojin
             Jovanović
           </div>
         </div>

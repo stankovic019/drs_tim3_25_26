@@ -44,7 +44,7 @@ def upload_profile_image():
     file_path = os.path.join(upload_folder, new_filename)
     file.save(file_path)
 
-    # ✅ PUN URL DO SLIKE
+    # PUN URL DO SLIKE
     image_url = f"{request.host_url.rstrip('/')}/uploads/{new_filename}"
 
     user.profile_image = image_url

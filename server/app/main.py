@@ -20,10 +20,10 @@ app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app, origins="*")
 
-# 📁 uploads folder VAN app/
+# uploads folder VAN app/
 UPLOAD_FOLDER = os.path.join(app.root_path, "..", "uploads")
 
-# 🖼️ static route za slike
+# static route za slike
 @app.route("/uploads/<path:filename>")
 def serve_upload(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
